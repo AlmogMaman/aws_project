@@ -1,0 +1,38 @@
+Resources:
+  # Gateway Endpoint - S3
+  S3GatewayEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref MyVPC
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.s3"
+      RouteTableIds:
+        - !Ref PrivateRouteTable
+      VpcEndpointType: Gateway
+
+  # Interface Endpoint - SSM
+  SSMInterfaceEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref MyVPC  # הפנה ל-VPC הקיים שלך
+      ServiceName: com.amazonaws.us-east-1.ssm
+      PrivateDnsEnabled: true
+      VpcEndpointType: Interface
+      SubnetIds:
+        - !Ref PrivateSubnet1  # הפנה ל-Private Subnet קיים
+        - !Ref PrivateSubnet2  # אם יש Subnet פרטי נוסף
+      SecurityGroupIds:
+        - !Ref EndpointSecurityGroup  # הגדר Security Group מתאים
+
+  # Interface Endpoint עבור SQS
+  SQSInterfaceEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref MyVPC  # הפנה ל-VPC הקיים שלך
+      ServiceName: com.amazonaws.us-east-1.sqs
+      PrivateDnsEnabled: true
+      VpcEndpointType: Interface
+      SubnetIds:
+        - !Ref PrivateSubnet1  # השתמש ב-Private Subnet הקיים
+        - !Ref PrivateSubnet2  # אם יש Subnet נוסף
+      SecurityGroupIds:
+        - !Ref EndpointSecurityGroup  # השתמש ב-Security Group מתאים

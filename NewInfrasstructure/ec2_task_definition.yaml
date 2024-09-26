@@ -1,0 +1,17 @@
+Resources:
+  MyECSTask:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: "MyTaskFamily"
+      NetworkMode: bridge  # Suitable for EC2
+      RequiresCompatibilities:
+        - EC2
+      Cpu: "256"
+      Memory: "512"
+      ContainerDefinitions:
+        - Name: "MyContainer"
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/my-app:latest"
+          Essential: true
+          PortMappings:
+            - ContainerPort: 8080
+              HostPort: 8080

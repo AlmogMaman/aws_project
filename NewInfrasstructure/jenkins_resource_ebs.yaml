@@ -1,0 +1,25 @@
+Resources:
+  MyEBSVolume:
+    Type: AWS::EC2::Volume
+    Properties:
+      AvailabilityZone: !Select [ 0, !GetAZs !Ref "AWS::Region" ]
+      Size: 50
+      VolumeType: gp2
+
+  MyECSTask:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: "MyTaskFamily"
+      RequiresCompatibilities:
+        - EC2
+      ContainerDefinitions:
+        - Name: "Jenkins"
+          Image: "jenkins/jenkins:lts"
+          Essential: true
+          MountPoints:
+            - SourceVolume: jenkins-ebs
+              ContainerPath: /var/jenkins_home  # אחסון קבוע עבור Jenkins
+      Volumes:
+        - Name: jenkins-ebs
+          Host:
+            SourcePath: /mnt/ebs/jenkins_home

@@ -1,0 +1,49 @@
+Parameters:
+  Region:
+    Description: "The AWS region to deploy the infrastructure"
+    Type: String
+    Default: "us-east-1"
+    AllowedValues:
+      - "us-east-1"
+      - "us-west-2"
+      - "eu-west-1"
+      - "eu-central-1"
+    ConstraintDescription: "Must be a valid AWS region."
+
+  InstanceType:
+    Type: String
+    Default: t3.medium
+    Description: EC2 instance type
+
+  KeyName:
+    Type: String
+    Description: Name of an existing EC2 KeyPair to enable SSH access
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: The ID of the VPC
+
+  SubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: The ID of the Subnet within the VPC
+
+  microservice1Version:
+    Type: Number
+    Default: 1
+    Description: The version of the microservice1
+
+  microservice2Version:
+    Type: Number
+    Default: 1
+    Description: The version of the microservice2
+  
+  microservice1Image:
+    Type: String
+    Default: !Sub public.ecr.aws/v3k2f6k7/microservice1:${microservice1Version}
+    Description: Image for microservice1
+
+  microservice2Image:
+    Type: String
+    Default: !Sub public.ecr.aws/v3k2f6k7/microservice2:${microservice2Version}
+    Description: Image for microservice2
+

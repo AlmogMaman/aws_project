@@ -1,0 +1,184 @@
+
+#Resource
+#########
+LoadBalancer:
+  Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+  Properties:
+    Name: "MyALB"
+    Scheme: internet-facing
+    Subnets:
+      - !Ref PublicSubnet1
+      - !Ref PublicSubnet2
+    SecurityGroups:
+      - !Ref LoadBalancerSecurityGroup
+
+#Security Group
+#########
+LoadBalancerSecurityGroup:
+  Type: AWS::EC2::SecurityGroup
+  Properties:
+    GroupDescription: Security group for ALB
+    VpcId: !Ref VPC
+    SecurityGroupIngress:
+      #For Jenkins
+      - CidrIp: 0.0.0.0/0
+        IpProtocol: tcp
+        FromPort: 8080
+        ToPort: 8080
+
+      #For Microservice 1
+      - CidrIp: 0.0.0.0/0
+        IpProtocol: tcp
+        FromPort: 8081
+        ToPort: 8081
+
+      #For Microservice2
+      - CidrIp: 0.0.0.0/0
+        IpProtocol: tcp
+        FromPort: 8082
+        ToPort: 8082
+    
+    SecurityGroupEgress:
+      - IpProtocol: -1
+        CidrIp: 0.0.0.0/0
+
+#Target Groups
+#########
+
+TargetGroup8081:
+  Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  Properties:
+    VpcId: !Ref VPC
+    Port: 8081
+    Protocol: HTTP
+    TargetType: ip
+    HealthCheckPath: /microservice1/health
+    HealthCheckIntervalSeconds: 30
+    Matcher:
+      HttpCode: 200-299
+    Targets:
+      - Id: !Ref MyTaskPrivateIP
+
+TargetGroup8082:
+  Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  Properties:
+    VpcId: !Ref VPC
+    Port: 8082
+    Protocol: HTTP
+    TargetType: ip
+    HealthCheckPath: /microservice2/health
+    HealthCheckIntervalSeconds: 30
+    Matcher:
+      HttpCode: 200-299
+    Targets:
+      - Id: !Ref MyTaskPrivateIP
+
+TargetGroup8080:
+  Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  Properties:
+    VpcId: !Ref VPC
+    Port: 8080
+    Protocol: HTTP
+    TargetType: instance
+    HealthCheckPath: /jenkins/health
+    HealthCheckIntervalSeconds: 30
+    Matcher:
+      HttpCode: 200-299
+    Targets:
+      - Id: !Ref MyTaskPrivateIP
+
+#Listener
+############
+
+ALBListener:
+  Type: AWS::ElasticLoadBalancingV2::Listener
+  Properties:
+    DefaultActions:
+      - Type: forward
+        TargetGroupArn: !GetAtt TargetGroup8081.Arn #The default is microservice1.
+    LoadBalancerArn: !Ref LoadBalancer
+    Port: 8081
+    Protocol: HTTP
+
+#route to microservice1
+ALBListenerRuleMicroservice1:
+  Type: AWS::ElasticLoadBalancingV2::ListenerRule
+  Properties:
+    Actions:
+      - Type: forward
+        TargetGroupArn: !GetAtt TargetGroup8081.Arn
+    Conditions:
+      - Field: path-pattern
+        Values:
+          - /microservice1/*
+    ListenerArn: !Ref ALBListener
+    Priority: 1
+
+ALBListenerRuleHealthCheckMicro1:
+  Type: AWS::ElasticLoadBalancingV2::ListenerRule
+  Properties:
+    Actions:
+      - Type: forward
+        TargetGroupArn: !GetAtt TargetGroup8081.Arn
+    Conditions:
+      - Field: path-pattern
+        Values:
+          - /microservice1/health
+    ListenerArn: !Ref ALBListener
+    Priority: 2
+
+
+#route to microservice2
+ALBListenerRuleMicroservice2:
+  Type: AWS::ElasticLoadBalancingV2::ListenerRule
+  Properties:
+    Actions:
+      - Type: forward
+        TargetGroupArn: !GetAtt TargetGroup8082.Arn
+    Conditions:
+      - Field: path-pattern
+        Values:
+          - /microservice2/*
+    ListenerArn: !Ref ALBListener
+    Priority: 3
+
+ALBListenerRuleHealthCheckMicro2:
+  Type: AWS::ElasticLoadBalancingV2::ListenerRule
+  Properties:
+    Actions:
+      - Type: forward
+        TargetGroupArn: !GetAtt TargetGroup8082.Arn
+    Conditions:
+      - Field: path-pattern
+        Values:
+          - /microservice2/health
+    ListenerArn: !Ref ALBListener
+    Priority: 4
+
+
+#route to jenkins
+ALBListenerRuleJenkins:
+  Type: AWS::ElasticLoadBalancingV2::ListenerRule
+  Properties:
+    Actions:
+      - Type: forward
+        TargetGroupArn: !GetAtt TargetGroup8080.Arn
+    Conditions:
+      - Field: path-pattern
+        Values:
+          - /jenkins/*
+    ListenerArn: !Ref ALBListener
+    Priority: 5
+
+ALBListenerRuleHealthCheckJenkins:
+  Type: AWS::ElasticLoadBalancingV2::ListenerRule
+  Properties:
+    Actions:
+      - Type: forward
+        TargetGroupArn: !GetAtt TargetGroup8080.Arn
+    Conditions:
+      - Field: path-pattern
+        Values:
+          - /jenkins/health
+    ListenerArn: !Ref ALBListener
+    Priority: 6

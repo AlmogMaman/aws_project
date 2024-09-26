@@ -1,0 +1,25 @@
+#Create stack
+aws cloudformation create-stack \
+  --stack-name MyStack \
+  --template-body file://mytemplate.yaml \
+  --parameters file://myparameters.yaml
+
+  aws cloudformation create-stack \
+  --stack-name MyStack \
+  --template-body file://mytemplate.yaml \
+  --parameters file://parameters.yaml \
+               ParameterKey=InstanceType,ParameterValue=t2.micro
+
+
+#Update Stack
+aws cloudformation update-stack \
+  --stack-name MyStack \
+  --template-body file://mytemplate.yaml \
+  --parameters file://parameters.yaml
+
+  aws cloudformation update-stack \
+  --stack-name MyStack \
+  --template-body file://mytemplate.yaml \
+  --parameters file://parameters.yaml \
+               ParameterKey=InstanceType,ParameterValue=t2.micro
+

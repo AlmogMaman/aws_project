@@ -1,0 +1,26 @@
+0. Clone this git repo
+1. Download AWS CLI
+2. Log In to you AWS account.
+2.1. Make sure that you have the right permissions to run the services.
+I add a IAM policy that I worked with. (to add the all_policy policy json file)
+3. navigate to infrastructure && do aws cloudformation create-stack ....
+
+3.1. For me:
+take care to make the infrastructure
+take care to uplouad the images iof the applications to ECR
+
+4. login to jenkins - make sure you setup the SCM to this repo + your aws credentioals for CD by these instructions:
+....
+5. Login and Set Up Prometheus and Grafana by these instructions:
+....
+6.Now we ready to test the project:
+Send a message to the ALB address/microservice1 with the data reqiured. Pay attention that the correct token is the token as you choose.
+Insert it as a env variable to cloudformation.
+7. check the microservice2 by checking if the data has been sent to the S3 bucket.
+8. I added pictures for the architecture, ci, cd, monitoring.
+9. Additional things...
+
+NOTES
+*) I use FARGATE as a ECS tasks compute.
+*) I Use VPC ENDPOINTS for enssuring the traffic for reaching internal AWS services won't go throut the global
+Internet.
