@@ -1,3 +1,5 @@
+WSTemplateFormatVersion: '2010-09-09'
+Description: 'Application Load Balancer for the application'
 
 #Resource
 #########
@@ -182,3 +184,8 @@ ALBListenerRuleHealthCheckJenkins:
           - /jenkins/health
     ListenerArn: !Ref ALBListener
     Priority: 6
+
+Outputs:
+  AlbUrl:
+    Description: "URL to the ALB - entry point"
+    Value: !Sub "https://s3.${AWS::Region}.amazonaws.com/${MyS3Bucket}"

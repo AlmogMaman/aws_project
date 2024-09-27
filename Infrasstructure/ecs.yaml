@@ -1,3 +1,6 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'ECS Cluster and services for the project'
+
 Resources:
   ECSCluster:
     Type: AWS::ECS::Cluster
@@ -12,14 +15,17 @@ Resources:
       Memory: 512
       NetworkMode: awsvpc
       RequiresCompatibilities: [FARGATE]
-      ExecutionRoleArn: !GetAtt ECSExecutionRole.Arn
+      ExecutionRoleArn: !GetAtt Microservice1TaskRole.Arn
       ContainerDefinitions:
         - Name: "Microservice1"
           Image: !Ref microservice1Image
           Essential: true
           Environment:
-            - Name: "SQS_URL"
-              Value: !Ref SQSQueueURL
+            - Name: SQS_QUEUE_URL
+              Value: !ImportValue SQSQueueURI
+            
+            - Name: SSM_PARAMETER_URI
+              Value: !ImportValue SSMParameterURI
 
   Microservice2TaskDefinition:
     Type: AWS::ECS::TaskDefinition
@@ -29,54 +35,51 @@ Resources:
       Memory: 512
       NetworkMode: awsvpc
       RequiresCompatibilities: [FARGATE]
-      ExecutionRoleArn: !GetAtt ECSExecutionRole.Arn
+      ExecutionRoleArn: !GetAtt Microservice2TaskRole.Arn
       ContainerDefinitions:
         - Name: "Microservice2"
           Image: !Ref microservice2Image
           Essential: true
           Environment:
-            - Name: "SQS_URL"
-              Value: !Ref SQSQueueURL
-            - Name: "S3_BUCKET"
-              Value: !Ref S3BucketName
-    
-  MyTaskDefinition:
-    Type: AWS::ECS::TaskDefinition
-    Properties:
-      Family: "my-microservice-task"
-      NetworkMode: awsvpc
-      ContainerDefinitions:
-        - Name: "my-microservice"
-          Image: "your-ecr-repository/my-microservice-image"
-          Essential: true
-          Memory: 512
-          Cpu: 256
-          Environment:
             - Name: SQS_QUEUE_URL
-              Value: !Ref MySQSQueue  # משתנה סביבה עבור SQS
+              Value: !ImportValue SQSQueueURI
+            
             - Name: S3_BUCKET_URI
-              Value: !Sub "https://s3.${AWS::Region}.amazonaws.com/${MyS3Bucket}"  # משתנה סביבה עבור S3
-            - Name: SSM_PARAMETER_URI
-              Value: !Sub "https://ssm.${AWS::Region}.amazonaws.com/parameters/${MySSMParameter}"  # משתנה סביבה עבור SSM
-      RequiresCompatibilities:
-        - FARGATE
-      Cpu: "256"
-      Memory: "512"
+              Value: !ImportValue S3BucketURI
+
+            #In seconds
+            - Name: PULL_MESSAGE_INTERVAL
+              Value: !Ref PullMessageInterval
+    
 
 
 
-#Security Group
+#Security Groups
 #########
-  ECSServiceSecurityGroup:
+  Microservice1Sg:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Security group for ECS tasks
       VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
-          FromPort: 8080  # Port for Jenkins
-          ToPort: 8080
-          SourceSecurityGroupId: !Ref ALBSecurityGroup  # Allow traffic from ALB
+          FromPort: 8081
+          ToPort: 8081
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0  # Allow all outbound traffic (for access to internet via NAT Gateway)
+  
+  Microservice2Sg:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for ECS tasks
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8082
+          ToPort: 8082
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
       SecurityGroupEgress:
         - IpProtocol: -1
           CidrIp: 0.0.0.0/0  # Allow all outbound traffic (for access to internet via NAT Gateway)
@@ -88,21 +91,29 @@ Resources:
     Properties:
       Cluster: !Ref ECSCluster
       TaskDefinition: !Ref Microservice1TaskDefinition
+      LoadBalancers:
+        - ContainerName: microservice1
+          ContainerPort: 8081
+          TargetGroupArn: !Ref TargetGroup8081
       DesiredCount: 1
       LaunchType: FARGATE
       NetworkConfiguration:
         AwsvpcConfiguration:
-          Subnets: [!Ref PrivateSubnet1]
-          SecurityGroups: [!Ref ECSServiceSecurityGroup]
+          Subnets: [!Ref PrivateSubnet]
+          SecurityGroups: [!Ref Microservice1Sg]
 
   Microservice2Service:
     Type: AWS::ECS::Service
     Properties:
       Cluster: !Ref ECSCluster
       TaskDefinition: !Ref Microservice2TaskDefinition
+      LoadBalancers:
+        - ContainerName: microservice2
+          ContainerPort: 8082
+          TargetGroupArn: !Ref TargetGroup8082
       DesiredCount: 1
       LaunchType: FARGATE
       NetworkConfiguration:
         AwsvpcConfiguration:
-          Subnets: [!Ref PrivateSubnet1]
-          SecurityGroups: [!Ref ECSServiceSecurityGroup]
+          Subnets: [!Ref PrivateSubnet]
+          SecurityGroups: [!!Ref Microservice2Sg]

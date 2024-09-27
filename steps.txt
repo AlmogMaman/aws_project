@@ -24,3 +24,5 @@ NOTES
 *) I use FARGATE as a ECS tasks compute.
 *) I Use VPC ENDPOINTS for enssuring the traffic for reaching internal AWS services won't go throut the global
 Internet.
+*) Security in Mind
+*) USE IAN roles for princeple of least privilage. 

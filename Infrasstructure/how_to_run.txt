@@ -23,3 +23,9 @@ aws cloudformation update-stack \
   --parameters file://parameters.yaml \
                ParameterKey=InstanceType,ParameterValue=t2.micro
 
+aws cloudformation update-stack \
+  --stack-name my-stack \
+  --template-body file://my-template.yaml \
+  --parameters ParameterKey=MyOptionalParameter,UsePreviousValue=true
+
+

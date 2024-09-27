@@ -1,0 +1,37 @@
+Resources:
+  MyS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: "my-service-bucket"
+      
+  MySQSQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: "my-service-queue"
+
+  MySSMParameter:
+      Type: AWS::SSM::Parameter
+      Properties:
+        Name: "Token"
+        Type: SecureString
+        Value: !Ref SmmToken
+        KeyId: "alias/aws/ssm"
+
+Outputs:
+  S3BucketURI:
+    Description: "The URI of the S3 bucket"
+    Value: !Sub "https://s3.${AWS::Region}.amazonaws.com/${MyS3Bucket}"
+    Export:
+      Name: S3BucketURI
+
+  SQSQueueURI:
+    Description: "The URI of the SQS queue"
+    Value: !Ref MySQSQueue
+    Export:
+      Name: SQSQueueURI
+
+  SSMParameterURI:
+    Description: "The URI of the SSM parameter"
+    Value: !Sub "https://ssm.${AWS::Region}.amazonaws.com/parameters/${MySSMParameter}"
+    Export:
+      Name: SSMParameterURI

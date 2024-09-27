@@ -1,0 +1,85 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'IAM roles for the project'
+
+Resources:
+  Microservice1TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: Microservice1Policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage  #Sends messages to SQS
+                Resource: !GetAtt MySQSQueue.Arn
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter  # request parameter from ssm
+                Resource: !GetAtt  MySSMParameter.Arn
+
+  Microservice2TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: Microservice2Policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                Resource: !GetAtt MySQSQueue.Arn
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource: !GetAtt MyS3Bucket.Arn
+
+  JenkinsEC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: JenkinsECRCloudFormationPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecr-public:GetDownloadUrlForLayer
+                  - ecr-public:BatchCheckLayerAvailability
+                  - ecr-public:BatchGetImage
+                  - ecr-public:PutImage
+                Resource:
+                  - "arn:aws:ecr-public::v3k2f6k7:repository/microservice1"
+                  - "arn:aws:ecr-public::v3k2f6k7:repository/microservice2"
+              - Effect: Allow
+                Action:
+                  - cloudformation:DescribeStacks
+                  - cloudformation:DescribeChangeSet
+                  - cloudformation:CreateChangeSet
+                  - cloudformation:ExecuteChangeSet
+                  - cloudformation:UpdateStack
+                Resource: "*"

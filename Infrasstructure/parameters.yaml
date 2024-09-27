@@ -10,40 +10,36 @@ Parameters:
       - "eu-central-1"
     ConstraintDescription: "Must be a valid AWS region."
 
-  InstanceType:
+  JenkinsInstanceType:
     Type: String
     Default: t3.medium
     Description: EC2 instance type
 
-  KeyName:
-    Type: String
-    Description: Name of an existing EC2 KeyPair to enable SSH access
-
-  VpcId:
-    Type: AWS::EC2::VPC::Id
-    Description: The ID of the VPC
-
-  SubnetId:
-    Type: AWS::EC2::Subnet::Id
-    Description: The ID of the Subnet within the VPC
-
-  microservice1Version:
+  Microservice1Version:
     Type: Number
     Default: 1
     Description: The version of the microservice1
 
-  microservice2Version:
+  Microservice2Version:
     Type: Number
     Default: 1
     Description: The version of the microservice2
   
-  microservice1Image:
+  Microservice1Image:
     Type: String
-    Default: !Sub public.ecr.aws/v3k2f6k7/microservice1:${microservice1Version}
+    Default: !Sub public.ecr.aws/v3k2f6k7/microservice1:V${Microservice1Version}
     Description: Image for microservice1
 
-  microservice2Image:
+  Microservice2Image:
     Type: String
-    Default: !Sub public.ecr.aws/v3k2f6k7/microservice2:${microservice2Version}
+    Default: !Sub public.ecr.aws/v3k2f6k7/microservice2:V${Microservice2Version}
     Description: Image for microservice2
 
+  PullMessageInterval:
+  Type: Number
+  Default: 15
+  Description: Amount of seconds that the microservice 2 pull the messages from the SQS
+
+  SmmToken:
+    Type: SSecureString
+    Description: The Token that we need for validate the messages. Must insert when creating the stack.

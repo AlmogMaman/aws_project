@@ -1,3 +1,6 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'The Master Stack that call to Nested Stacks'
+
 Resources:
   NetworkStack:
     Type: AWS::CloudFormation::Stack
