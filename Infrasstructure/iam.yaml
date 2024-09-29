@@ -1,6 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'IAM roles for the project'
 
+
 Resources:
   Microservice1TaskRole:
     Type: AWS::IAM::Role
@@ -20,11 +21,20 @@ Resources:
               - Effect: Allow
                 Action:
                   - sqs:SendMessage  #Sends messages to SQS
-                Resource: !GetAtt MySQSQueue.Arn
+                Resource: !ImportValue MySQSQueueArn
+              
               - Effect: Allow
                 Action:
-                  - ssm:GetParameter  # request parameter from ssm
-                Resource: !GetAtt  MySSMParameter.Arn
+                  - secretsmanager:GetSecretValue  # Access secret from Secrets Manager
+                Resource: !ImportValue MySecretArn
+
+              - Effect: Allow
+                Action:
+                  - ecr-public:GetDownloadUrlForLayer
+                  - ecr-public:BatchCheckLayerAvailability
+                  - ecr-public:BatchGetImage
+                Resource: 
+                  - "public.ecr.aws/v3k2f6k7/microservice1"
 
   Microservice2TaskRole:
     Type: AWS::IAM::Role
@@ -45,11 +55,20 @@ Resources:
                 Action:
                   - sqs:ReceiveMessage
                   - sqs:DeleteMessage
-                Resource: !GetAtt MySQSQueue.Arn
+                Resource: !ImportValue MySQSQueueArn
+              
               - Effect: Allow
                 Action:
                   - s3:PutObject
-                Resource: !GetAtt MyS3Bucket.Arn
+                Resource: !ImportValue MyS3BucketArn
+
+              - Effect: Allow
+                Action:
+                  - ecr-public:GetDownloadUrlForLayer
+                  - ecr-public:BatchCheckLayerAvailability
+                  - ecr-public:BatchGetImage
+                Resource: 
+                  - "public.ecr.aws/v3k2f6k7/microservice2"
 
   JenkinsEC2Role:
     Type: AWS::IAM::Role
@@ -73,8 +92,8 @@ Resources:
                   - ecr-public:BatchGetImage
                   - ecr-public:PutImage
                 Resource:
-                  - "arn:aws:ecr-public::v3k2f6k7:repository/microservice1"
-                  - "arn:aws:ecr-public::v3k2f6k7:repository/microservice2"
+                  - "public.ecr.aws/v3k2f6k7/microservice1"
+                  - "public.ecr.aws/v3k2f6k7/microservice2"
               - Effect: Allow
                 Action:
                   - cloudformation:DescribeStacks
@@ -83,3 +102,39 @@ Resources:
                   - cloudformation:ExecuteChangeSet
                   - cloudformation:UpdateStack
                 Resource: "*"
+              
+              #For getting the latest linux AMI
+              - Effect: Allow
+                Action:
+                  - "ssm:GetParameter"
+                  - "ssm:GetParameters"
+                  - "ssm:GetParametersByPath"
+                Resource:
+                  -  "arn:aws:ssm:*:*:parameter/aws/service/ami-amazon-linux-latest/*"
+
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource: "arn:aws:s3:::almog-maman-cloudformation-files"
+
+
+Outputs:
+  Microservice1TaskRoleArn:
+    Description: "Microservice1TaskRole Arn"
+    Value: !Ref Microservice1TaskRole
+    Export:
+      Name: Microservice1TaskRoleArn
+
+
+  Microservice2TaskRoleArn:
+    Description: "Microservice2TaskRole Arn"
+    Value: !Ref Microservice2TaskRole
+    Export:
+      Name: Microservice2TaskRoleArn
+
+  JenkinsEC2RoleArn:
+    Description: "JenkinsEC2RoleId Arn"
+    Value: !Ref JenkinsEC2Role
+    Export:
+      Name: JenkinsEC2RoleArn

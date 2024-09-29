@@ -11,6 +11,11 @@ aws cloudformation create-stack \
                ParameterKey=InstanceType,ParameterValue=t2.micro
 
 
+
+
+
+
+
 #Update Stack
 aws cloudformation update-stack \
   --stack-name MyStack \

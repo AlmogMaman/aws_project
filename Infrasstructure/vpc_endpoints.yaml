@@ -1,24 +1,27 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "End points to the aws services for more secured approch"
+
 Resources:
   # Gateway Endpoint - S3
   S3GatewayEndpoint:
     Type: AWS::EC2::VPCEndpoint
     Properties:
-      VpcId: !Ref MyVPC
+      VpcId: !ImportValue VpcId
       ServiceName: !Sub "com.amazonaws.${AWS::Region}.s3"
       RouteTableIds:
-        - !Ref PrivateRouteTable
+        - !ImportValue PrivateRouteTableId
       VpcEndpointType: Gateway
 
-  # Interface Endpoint - SSM
-  SSMInterfaceEndpoint:
+  # Interface Endpoint - secret manager
+  SecretsManagerInterfaceEndpoint:
     Type: AWS::EC2::VPCEndpoint
     Properties:
-      VpcId: !Ref MyVPC
-      ServiceName: !Sub "com.amazonaws.${AWS::Region}.ssm"
+      VpcId: !ImportValue VpcId
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.secretsmanager"
       PrivateDnsEnabled: true
       VpcEndpointType: Interface
       SubnetIds:
-        - !Ref PrivateSubnet
+        - !ImportValue PrivateSubnetId
       SecurityGroupIds:
         - !Ref EndpointSecurityGroup
 
@@ -26,25 +29,25 @@ Resources:
   SQSInterfaceEndpoint:
     Type: AWS::EC2::VPCEndpoint
     Properties:
-      VpcId: !Ref MyVPC
+      VpcId: !ImportValue VpcId
       ServiceName: !Sub "com.amazonaws.${AWS::Region}.sqs"
       PrivateDnsEnabled: true
       VpcEndpointType: Interface
       SubnetIds:
-        - !Ref PrivateSubnet
+        - !ImportValue PrivateSubnetId
       SecurityGroupIds:
         - !Ref EndpointSecurityGroup
 
-EndpointSecurityGroup:
+  EndpointSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties: 
-      VpcId: !Ref VPC
+      VpcId: !ImportValue VpcId
       GroupDescription: "Security group for VPC Endpoints"
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
-          CidrIp: !Get::Attr PrivetSubnet.CidrBlock
+          CidrIp: !ImportValue PrivateSubnetCidr
       SecurityGroupEgress:
         - IpProtocol: -1
           CidrIp: 0.0.0.0/0

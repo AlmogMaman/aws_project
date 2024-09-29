@@ -16,26 +16,26 @@ Resources:
   PublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
-      CidrBlock: 10.0.0.0/24
+      CidrBlock: 10.0.1.0/24
       VpcId: !Ref VPC
-      AvailabilityZone: !Select [ 0, !GetAZs !Ref AWS::Region ]
+      AvailabilityZone: !Select [0, !GetAZs '']
       MapPublicIpOnLaunch: true
 
   #For high availability (HA) - of the ALB abd NAT.
   PublicSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
-      CidrBlock: 10.1.0.0/24
+      CidrBlock: 10.0.2.0/24
       VpcId: !Ref VPC
-      AvailabilityZone: !Select [ 1, !GetAZs !Ref AWS::Region ]
+      AvailabilityZone: !Select [1, !GetAZs '']
       MapPublicIpOnLaunch: true
 
   PrivateSubnet:
     Type: AWS::EC2::Subnet
     Properties:
-      CidrBlock: 10.2.0.0/24
+      CidrBlock: 10.0.3.0/24
       VpcId: !Ref VPC
-      AvailabilityZone: !Select [ 0, !GetAZs !Ref AWS::Region ]
+      AvailabilityZone: !Select [0, !GetAZs '']
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
@@ -98,3 +98,42 @@ Resources:
     Properties:
       SubnetId: !Ref PrivateSubnet
       RouteTableId: !Ref PrivateRouteTable
+
+Outputs:
+  VpcId:
+    Description: "VPC ID"
+    Value: !Ref VPC
+    Export:
+      Name: VpcId
+
+  PublicSubnet1Id:
+    Description: "PublicSubnet1 ID"
+    Value: !Ref PublicSubnet1
+    Export:
+      Name: PublicSubnet1Id
+
+  PublicSubnet2Id:
+    Description: "PublicSubnet2 ID"
+    Value: !Ref PublicSubnet2
+    Export:
+      Name: PublicSubnet2Id
+
+  PrivateSubnetId:
+    Description: "PrivateSubnet ID"
+    Value: !Ref PrivateSubnet
+    Export:
+      Name: PrivateSubnetId
+
+
+  PrivateRouteTableId:
+    Description: "PrivateRouteTable ID"
+    Value: !Ref PrivateRouteTable
+    Export:
+      Name: PrivateRouteTableId
+
+
+  PrivateSubnetCidr:
+    Description: "PrivateSubnet Cidr"
+    Value: !GetAtt PrivateSubnet.CidrBlock
+    Export:
+      Name: PrivateSubnetCidr

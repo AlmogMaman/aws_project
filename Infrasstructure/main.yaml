@@ -1,0 +1,149 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'The Master Stack that call to Nested Stacks'
+
+Parameters:
+  PullMessageInterval:
+    Type: Number
+    Default: 15
+    Description: Amount of seconds that the microservice 2 pull the messages from the SQS
+
+  Token:
+    Type: String
+    Description: The Token that we need for validate the messages. Must insert when creating the stack.
+
+  Microservice1Version:
+    Type: String
+    Default: latest
+    Description: The version of the microservice1
+  
+
+  Microservice2Version:
+    Type: String
+    Default: latest
+    Description: The version of the microservice2
+
+  JenkinsInstanceType:
+    Type: String
+    Default: t3.medium
+    Description: EC2 instance type
+
+  #A const
+  Microservice1Image:
+    Type: String
+    Default: public.ecr.aws/v3k2f6k7/microservice1
+    Description: Image for microservice1
+    AllowedValues:
+      - public.ecr.aws/v3k2f6k7/microservice1
+
+  #A const
+  Microservice2Image:
+    Type: String
+    Default: public.ecr.aws/v3k2f6k7/microservice2
+    Description: Image for microservice2
+    AllowedValues:
+      - public.ecr.aws/v3k2f6k7/microservice2
+
+  #As a const
+  M1Port:
+    Type: Number
+    Default: 8081
+    Description: port for microsercive 1
+    AllowedValues:
+      - 8081
+
+  #As a const
+  M2Port:
+    Type: Number
+    Default: 8082
+    Description: port for microsercive 2
+    AllowedValues:
+      - 8082
+
+
+
+Resources:
+  NetworkStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL:  https://s3.amazonaws.com/almog-maman-cloudformation-files/networks.yaml
+  
+  
+  
+  ServicesStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.amazonaws.com/almog-maman-cloudformation-files/aws_services.yaml
+      Parameters:
+        Token: !Ref Token
+
+
+  IamStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+      - ServicesStack
+    Properties:
+      TemplateURL: https://s3.amazonaws.com/almog-maman-cloudformation-files/iam.yaml
+  
+
+  VpcEndpointStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+      - NetworkStack
+      - ServicesStack
+    Properties:
+      TemplateURL: https://s3.amazonaws.com/almog-maman-cloudformation-files/vpc_endpoints.yaml
+  
+  AlbStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+      - NetworkStack
+    Properties:
+      TemplateURL: https://s3.amazonaws.com/almog-maman-cloudformation-files/alb.yaml
+      Parameters:
+        - M1Port: !Ref M1Port
+        - M2Port: !Ref M2Port
+  
+  EcsStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+      - IamStack
+      - NetworkStack
+      - AlbStack
+      - ServicesStack
+      - VpcEndpointStack
+    Properties:
+      TemplateURL: https://s3.amazonaws.com/almog-maman-cloudformation-files/ecs.yaml
+      Parameters:
+        - M1Port: !Ref M1Port
+        - M2Port: !Ref M2Port
+        - PullMessageInterval: !Ref PullMessageInterval
+        - Microservice1Version: !Ref Microservice1Version
+        - Microservice2Version: !Ref Microservice2Version
+        - Microservice1Image: !Ref Microservice1Image
+        - Microservice2Image: !Ref Microservice2Image
+
+
+
+  JenkinsStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+      - IamStack
+      - NetworkStack
+      - AlbStack
+      - ServicesStack
+      - VpcEndpointStack
+    Properties:
+      TemplateURL: https://s3.amazonaws.com/almog-maman-cloudformation-files/jenkins.yaml
+      Parameters:
+        - JenkinsInstanceType: !Ref JenkinsInstanceType
+        - Microservice1Version: !Ref Microservice1Version
+        - Microservice2Version: !Ref Microservice2Version
+        - Microservice1Image: !Ref Microservice1Image
+        - Microservice2Image: !Ref Microservice2Image
+
+  
+  
+  
+  
+  
+

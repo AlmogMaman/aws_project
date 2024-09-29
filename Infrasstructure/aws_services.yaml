@@ -1,37 +1,69 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "The aws services the projest uses"
+
+
+Parameters:
+  Token:
+    Type: String
+    Description: The Token that we need for validate the messages. Must insert when creating the stack.
+
 Resources:
   MyS3Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: "my-service-bucket"
-      
+      BucketName: "project-bucket-456456789546545"
+
   MySQSQueue:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: "my-service-queue"
+      QueueName: "project-queue.fifo"
+      FifoQueue: true  
+      ContentBasedDeduplication: true
+      Tags:
+        - Key: Name
+          Value: MyFifoQueue
 
-  MySSMParameter:
-      Type: AWS::SSM::Parameter
-      Properties:
-        Name: "Token"
-        Type: SecureString
-        Value: !Ref SmmToken
-        KeyId: "alias/aws/ssm"
+  MySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: "Token"
+      Description: "This is a Token for my project"
+      SecretString: !Ref Token
 
 Outputs:
-  S3BucketURI:
+  MyS3BucketURI:
     Description: "The URI of the S3 bucket"
     Value: !Sub "https://s3.${AWS::Region}.amazonaws.com/${MyS3Bucket}"
     Export:
-      Name: S3BucketURI
+      Name: MyS3BucketURI
 
-  SQSQueueURI:
+  MyS3BucketArn:
+    Description: "The Arn of the S3 bucket"
+    Value: !GetAtt MyS3Bucket.Arn
+    Export:
+      Name: MyS3BucketArn
+
+  ########
+  MySQSQueueURI:
     Description: "The URI of the SQS queue"
     Value: !Ref MySQSQueue
     Export:
-      Name: SQSQueueURI
+      Name: MySQSQueueURI
 
-  SSMParameterURI:
-    Description: "The URI of the SSM parameter"
-    Value: !Sub "https://ssm.${AWS::Region}.amazonaws.com/parameters/${MySSMParameter}"
+  MySQSQueueArn:
+    Description: "The URI of the SQS queue"
+    Value: !GetAtt MySQSQueue.Arn
     Export:
-      Name: SSMParameterURI
+      Name: MySQSQueueArn
+  #######
+  MySecretURI:
+    Description: "The URI of the Secrets Manager secret"
+    Value: !Sub "https://secretsmanager.${AWS::Region}.amazonaws.com/secrets/${MySecret}/"
+    Export:
+      Name: MySecretURI
+
+  MySecretArn:
+    Description: "MySecret Arn"
+    Value: !Ref MySecret
+    Export:
+      Name: MySecretArn
