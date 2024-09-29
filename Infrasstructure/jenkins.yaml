@@ -28,11 +28,11 @@ Resources:
         - IpProtocol: tcp
           FromPort: 8080
           ToPort: 8080
-          SourceSecurityGroupId: !ImportValue ALBSecurityGroupId
+          SourceSecurityGroupId: !ImportValue LoadBalancerSecurityGroupId
         - IpProtocol: tcp
           FromPort: 50000
           ToPort: 50000
-          SourceSecurityGroupId: !ImportValue ALBSecurityGroupId 
+          SourceSecurityGroupId: !ImportValue LoadBalancerSecurityGroupId 
         # - IpProtocol: tcp
         #   FromPort: 22
         #   ToPort: 22
@@ -106,7 +106,7 @@ Resources:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Roles:
-        - !ImportValue JenkinsEC2RoleId
+        - !ImportValue JenkinsEC2RoleArn
 
   # Auto Scaling Group
   JenkinsAutoScalingGroup:
@@ -116,6 +116,7 @@ Resources:
         - !ImportValue PrivateSubnetId
       LaunchTemplate:
         LaunchTemplateId: !Ref JenkinsLaunchTemplate
+        Version: !GetAtt JenkinsLaunchTemplate.LatestVersionNumber
       MinSize: 1
       MaxSize: 4
       DesiredCapacity: 1
@@ -124,7 +125,7 @@ Resources:
           Value: JenkinsInstance
           PropagateAtLaunch: true
       TargetGroupARNs:
-      - !ImportValue TargetGroup8080Arn
+        - !ImportValue TargetGroup8080Arn
 
 
 Outputs:

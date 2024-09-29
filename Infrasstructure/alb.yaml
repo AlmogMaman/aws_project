@@ -105,9 +105,9 @@ Resources:
       Port: !Ref M1Port
       Protocol: HTTP
     DependsOn: 
-    - TargetGroup8081
-    - TargetGroup8082
-    - TargetGroup8080
+      - TargetGroup8081
+      - TargetGroup8082
+      - TargetGroup8080
 
   #route to microservice1
   ALBListenerRuleMicroservice1:
@@ -123,7 +123,7 @@ Resources:
       ListenerArn: !Ref ALBListener
       Priority: 1
     DependsOn: 
-    - ALBListener
+      - ALBListener
 
   ALBListenerRuleHealthCheckMicro1:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
@@ -138,7 +138,7 @@ Resources:
       ListenerArn: !Ref ALBListener
       Priority: 2
     DependsOn: 
-    - ALBListener
+      - ALBListener
 
 
   #route to microservice2
@@ -155,7 +155,7 @@ Resources:
       ListenerArn: !Ref ALBListener
       Priority: 3
     DependsOn: 
-    - ALBListener
+      - ALBListener
 
   ALBListenerRuleHealthCheckMicro2:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
@@ -170,7 +170,7 @@ Resources:
       ListenerArn: !Ref ALBListener
       Priority: 4
     DependsOn: 
-    - ALBListener
+      - ALBListener
 
 
   #route to jenkins
@@ -187,7 +187,7 @@ Resources:
       ListenerArn: !Ref ALBListener
       Priority: 5
     DependsOn: 
-    - ALBListener
+      - ALBListener
 
   ALBListenerRuleHealthCheckJenkins:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
@@ -202,7 +202,7 @@ Resources:
       ListenerArn: !Ref ALBListener
       Priority: 6
     DependsOn: 
-    - ALBListener
+      - ALBListener
 
 Outputs:
   AlbUrl:

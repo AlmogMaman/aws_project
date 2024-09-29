@@ -34,7 +34,7 @@ Resources:
                   - ecr-public:BatchCheckLayerAvailability
                   - ecr-public:BatchGetImage
                 Resource: 
-                  - "public.ecr.aws/v3k2f6k7/microservice1"
+                  - "arn:aws:ecr-public:::public.ecr.aws/v3k2f6k7/microservice1"
 
   Microservice2TaskRole:
     Type: AWS::IAM::Role
@@ -68,7 +68,7 @@ Resources:
                   - ecr-public:BatchCheckLayerAvailability
                   - ecr-public:BatchGetImage
                 Resource: 
-                  - "public.ecr.aws/v3k2f6k7/microservice2"
+                  - "arn:aws:ecr-public:::public.ecr.aws/v3k2f6k7/microservice2"
 
   JenkinsEC2Role:
     Type: AWS::IAM::Role
@@ -92,8 +92,8 @@ Resources:
                   - ecr-public:BatchGetImage
                   - ecr-public:PutImage
                 Resource:
-                  - "public.ecr.aws/v3k2f6k7/microservice1"
-                  - "public.ecr.aws/v3k2f6k7/microservice2"
+                  - "arn:aws:ecr-public:::public.ecr.aws/v3k2f6k7/microservice1"
+                  - "arn:aws:ecr-public:::public.ecr.aws/v3k2f6k7/microservice2"
               - Effect: Allow
                 Action:
                   - cloudformation:DescribeStacks
@@ -109,14 +109,15 @@ Resources:
                   - "ssm:GetParameter"
                   - "ssm:GetParameters"
                   - "ssm:GetParametersByPath"
-                Resource:
-                  -  "arn:aws:ssm:*:*:parameter/aws/service/ami-amazon-linux-latest/*"
+                Resource: 
+                  - "arn:aws:ssm:*:*:parameter/aws/service/ami-amazon-linux-latest/*"
 
               - Effect: Allow
                 Action:
                   - s3:GetObject
                   - s3:PutObject
-                Resource: "arn:aws:s3:::almog-maman-cloudformation-files"
+                Resource: 
+                  - "arn:aws:s3:::almog-maman-cloudformation-files"
 
 
 Outputs:

@@ -1,0 +1,35 @@
+pipeline {
+    agent any
+    environment {
+        MICRO_SERVICE1_IMAGE = "public.ecr.aws/youraccount/microservice1"
+        MICRO_SERVICE2_IMAGE = "public.ecr.aws/youraccount/microservice2"
+    }
+    stages {
+        stage('Get Latest Image Versions') {
+            steps {
+                script {
+                    // Pull the latest version tags from ECR or another registry
+                    def latestVersion1 = sh(script: "aws ecr describe-images --repository-name microservice1 --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]' --output text", returnStdout: true).trim()
+                    def latestVersion2 = sh(script: "aws ecr describe-images --repository-name microservice2 --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]' --output text", returnStdout: true).trim()
+                    
+                    // Assign the latest version to environment variables
+                    env.MICRO_SERVICE1_IMAGE_VERSION = latestVersion1
+                    env.MICRO_SERVICE2_IMAGE_VERSION = latestVersion2
+                }
+            }
+        }
+        stage('Update CloudFormation Stack') {
+            steps {
+                script {
+                    // Update the CloudFormation stack with the latest versions
+                    sh """
+                    aws cloudformation update-stack --stack-name my-app-stack \
+                        --template-body file://my-template.yaml \
+                        --parameters ParameterKey=Microservice1ImageVersion,ParameterValue=${MICRO_SERVICE1_IMAGE_VERSION} \
+                                     ParameterKey=Microservice2ImageVersion,ParameterValue=${MICRO_SERVICE2_IMAGE_VERSION}
+                    """
+                }
+            }
+        }
+    }
+}

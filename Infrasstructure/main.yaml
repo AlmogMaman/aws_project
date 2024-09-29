@@ -83,7 +83,6 @@ Resources:
       - ServicesStack
     Properties:
       TemplateURL: https://s3.amazonaws.com/almog-maman-cloudformation-files/iam.yaml
-  
 
   VpcEndpointStack:
     Type: AWS::CloudFormation::Stack
@@ -100,8 +99,8 @@ Resources:
     Properties:
       TemplateURL: https://s3.amazonaws.com/almog-maman-cloudformation-files/alb.yaml
       Parameters:
-        - M1Port: !Ref M1Port
-        - M2Port: !Ref M2Port
+        M1Port: !Ref M1Port
+        M2Port: !Ref M2Port
   
   EcsStack:
     Type: AWS::CloudFormation::Stack
@@ -114,13 +113,13 @@ Resources:
     Properties:
       TemplateURL: https://s3.amazonaws.com/almog-maman-cloudformation-files/ecs.yaml
       Parameters:
-        - M1Port: !Ref M1Port
-        - M2Port: !Ref M2Port
-        - PullMessageInterval: !Ref PullMessageInterval
-        - Microservice1Version: !Ref Microservice1Version
-        - Microservice2Version: !Ref Microservice2Version
-        - Microservice1Image: !Ref Microservice1Image
-        - Microservice2Image: !Ref Microservice2Image
+        M1Port: !Ref M1Port
+        M2Port: !Ref M2Port
+        PullMessageInterval: !Ref PullMessageInterval
+        Microservice1Version: !Ref Microservice1Version
+        Microservice2Version: !Ref Microservice2Version
+        Microservice1Image: !Ref Microservice1Image
+        Microservice2Image: !Ref Microservice2Image
 
 
 
@@ -135,11 +134,11 @@ Resources:
     Properties:
       TemplateURL: https://s3.amazonaws.com/almog-maman-cloudformation-files/jenkins.yaml
       Parameters:
-        - JenkinsInstanceType: !Ref JenkinsInstanceType
-        - Microservice1Version: !Ref Microservice1Version
-        - Microservice2Version: !Ref Microservice2Version
-        - Microservice1Image: !Ref Microservice1Image
-        - Microservice2Image: !Ref Microservice2Image
+        JenkinsInstanceType: !Ref JenkinsInstanceType
+        Microservice1Version: !Ref Microservice1Version
+        Microservice2Version: !Ref Microservice2Version
+        Microservice1Image: !Ref Microservice1Image
+        Microservice2Image: !Ref Microservice2Image
 
   
   

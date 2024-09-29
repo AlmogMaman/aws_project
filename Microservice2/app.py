@@ -1,43 +1,49 @@
 import boto3
+import time
+import json
 import os
 
-# Use boto3 to interact with AWS services (S3 and SQS)
-sqs_client = boto3.client('sqs', region_name='us-east-1')
-s3_client = boto3.client('s3', region_name='us-east-1')
+# Initialize AWS clients
+sqs_client = boto3.client('sqs')
+s3_client = boto3.client('s3')
 
-# Get SQS queue URL
-SQS_QUEUE_URL = 'https://sqs.us-east-1.amazonaws.com/your-account-id/your-queue-name'
-S3_BUCKET_NAME = 'my-bucket'
+# SQS Queue URL and S3 Bucket Name (replace with your values)
+SQS_QUEUE_URL = os.getenv('SQS_QUEUE_URL')
+S3_BUCKET_NAME = os.getenv('S3_BUCKET_NAME')
+POLLING_INTERVAL = 10  # Time in seconds to wait before polling SQS again
 
-# Function to send message to SQS
-def send_message_to_sqs(message):
-    try:
-        response = sqs_client.send_message(
+def process_messages():
+    while True:
+        # Receive messages from SQS
+        response = sqs_client.receive_message(
             QueueUrl=SQS_QUEUE_URL,
-            MessageBody=message
+            MaxNumberOfMessages=10,
+            WaitTimeSeconds=20  # Long polling
         )
-        print(f"Message sent to SQS with ID: {response['MessageId']}")
-    except Exception as e:
-        print(f"Failed to send message to SQS: {str(e)}")
+        
+        messages = response.get('Messages', [])
+        
+        for message in messages:
+            # Process each message
+            upload_to_s3(message)
+            # Delete the message from the queue after processing
+            sqs_client.delete_message(
+                QueueUrl=SQS_QUEUE_URL,
+                ReceiptHandle=message['ReceiptHandle']
+            )
+        
+        time.sleep(POLLING_INTERVAL)
 
-# Function to upload file to S3
-def upload_file_to_s3(file_name, file_content):
-    try:
-        response = s3_client.put_object(
-            Bucket=S3_BUCKET_NAME,
-            Key=file_name,
-            Body=file_content
-        )
-        print(f"File uploaded to S3: {file_name}")
-    except Exception as e:
-        print(f"Failed to upload file to S3: {str(e)}")
+def upload_to_s3(message):
+    # Prepare data for S3 upload
+    message_body = json.loads(message['Body'])
+    filename = f"{message_body['email_subject']}.json"  # Example file name
+    s3_client.put_object(
+        Bucket=S3_BUCKET_NAME,
+        Key=filename,
+        Body=json.dumps(message_body)
+    )
+    print(f"Uploaded {filename} to S3.")
 
-# Example usage
-file_name = 'example.txt'
-file_content = 'This is a test file.'
-
-# Upload file to S3
-upload_file_to_s3(file_name, file_content)
-
-# Send message to SQS
-send_message_to_sqs('File uploaded successfully.')
+if __name__ == '__main__':
+    process_messages()

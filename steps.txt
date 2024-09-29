@@ -26,3 +26,5 @@ NOTES
 Internet.
 *) Security in Mind
 *) USE IAN roles for princeple of least privilage. 
+*)I use s3 bucket to store my cloudformation templates, I am using nested stacks.
+The files in the s3 bucket are the same as in the git repo.

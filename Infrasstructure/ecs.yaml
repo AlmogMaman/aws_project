@@ -125,10 +125,12 @@ Resources:
       LaunchType: FARGATE
       NetworkConfiguration:
         AwsvpcConfiguration:
-          Subnets: [!ImportValue PrivateSubnetId]
-          SecurityGroups: [!Ref Microservice1Sg]
+          Subnets:
+            - !ImportValue PrivateSubnetId
+          SecurityGroups: 
+            - !Ref Microservice1Sg
     DependsOn: 
-    - Microservice1TaskDefinition
+      - Microservice1TaskDefinition
 
   Microservice2Service:
     Type: AWS::ECS::Service
@@ -143,10 +145,12 @@ Resources:
       LaunchType: FARGATE
       NetworkConfiguration:
         AwsvpcConfiguration:
-          Subnets: [!ImportValue PrivateSubnetId]
-          SecurityGroups: [!Ref Microservice2Sg]
+          Subnets: 
+            - !ImportValue PrivateSubnetId
+          SecurityGroups: 
+            - !Ref Microservice2Sg
     DependsOn: 
-    - Microservice2TaskDefinition
+      - Microservice2TaskDefinition
 
 
 Outputs: 
