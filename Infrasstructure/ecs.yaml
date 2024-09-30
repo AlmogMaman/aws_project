@@ -33,8 +33,8 @@ Resources:
     Type: AWS::ECS::TaskDefinition
     Properties:
       Family: microservice1
-      Cpu: 2048
-      Memory: 2048
+      Cpu: 2048 #256
+      Memory: 5120 #512
       NetworkMode: awsvpc
       RequiresCompatibilities: [FARGATE]
       ExecutionRoleArn: !ImportValue Microservice1TaskRoleArn
@@ -60,7 +60,7 @@ Resources:
         - ContainerName: microservice1
           ContainerPort: !Ref M1Port
           TargetGroupArn: !ImportValue TargetGroup8081Arn
-      DesiredCount: 0
+      DesiredCount: 1 #1
       LaunchType: FARGATE
       NetworkConfiguration:
         AwsvpcConfiguration:
@@ -75,8 +75,8 @@ Resources:
     Type: AWS::ECS::TaskDefinition
     Properties:
       Family: microservice2
-      Cpu: 2048
-      Memory: 2048
+      Cpu: 2048 #256
+      Memory: 5120 #512
       NetworkMode: awsvpc
       RequiresCompatibilities: [FARGATE]
       ExecutionRoleArn: !ImportValue Microservice2TaskRoleArn
@@ -106,7 +106,7 @@ Resources:
         - ContainerName: microservice2
           ContainerPort: !Ref M2Port
           TargetGroupArn: !ImportValue TargetGroup8082Arn
-      DesiredCount: 0
+      DesiredCount: 0 #1
       LaunchType: FARGATE
       NetworkConfiguration:
         AwsvpcConfiguration:
