@@ -46,18 +46,18 @@ Parameters:
   #As a const
   M1Port:
     Type: Number
-    Default: 8081
+    Default: 80 #Change.
     Description: port for microsercive 1
     AllowedValues:
-      - 8081
+      - 80
 
   #As a const
   M2Port:
     Type: Number
-    Default: 8082
+    Default: 81 #Change
     Description: port for microsercive 2
     AllowedValues:
-      - 8082
+      - 81
 
 
 
