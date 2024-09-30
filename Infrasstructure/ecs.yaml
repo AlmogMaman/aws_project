@@ -106,7 +106,7 @@ Resources:
         - ContainerName: microservice2
           ContainerPort: !Ref M2Port
           TargetGroupArn: !ImportValue TargetGroup8082Arn
-      DesiredCount: 0 #1
+      DesiredCount: 1 #1
       LaunchType: FARGATE
       NetworkConfiguration:
         AwsvpcConfiguration:

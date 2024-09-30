@@ -54,10 +54,10 @@ Parameters:
   #As a const
   M2Port:
     Type: Number
-    Default: 81 #Change
+    Default: 80 #Change
     Description: port for microsercive 2
     AllowedValues:
-      - 81
+      - 80
 
 
 
