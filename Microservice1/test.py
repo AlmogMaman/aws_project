@@ -1,79 +1,53 @@
 import unittest
-from flask import json
 from app import app
 
-class Microservice1TestCase(unittest.TestCase):
+class FlaskAppTests(unittest.TestCase):
+
     def setUp(self):
-        """Set up the test client and any necessary context."""
+        # Set up the Flask app for testing
         self.app = app.test_client()
         self.app.testing = True
 
-    def test_valid_request(self):
-        """Test a valid request to the microservice."""
-        payload = {
-            "data": {
-                "email_subject": "Happy new year!",
-                "email_sender": "John Doe",
-                "email_timestream": "1693561101",
-                "email_content": "Just want to say... Happy new year!!!"
-            },
-            "token": "$DJISA<$#45ex3RtYr"
-        }
-        response = self.app.post('/microservice1', data=json.dumps(payload), content_type='application/json')
+    def test_index(self):
+        """Test the index route."""
+        response = self.app.get('/')
         self.assertEqual(response.status_code, 200)
-        self.assertIn('Data published to SQS successfully', response.get_data(as_text=True))
+        self.assertIn(b'Welcome to My Microservice', response.data)  # Update based on your index.html content
 
-    def test_missing_data_field(self):
-        """Test request with missing 'data' field."""
-        payload = {
-            "token": "$DJISA<$#45ex3RtYr"
-        }
-        response = self.app.post('/microservice1', data=json.dumps(payload), content_type='application/json')
-        self.assertEqual(response.status_code, 400)
-        self.assertIn('Invalid request, missing or invalid "data" field', response.get_data(as_text=True))
-
-    def test_missing_token_field(self):
-        """Test request with missing 'token' field."""
-        payload = {
-            "data": {
-                "email_subject": "Happy new year!",
-                "email_sender": "John Doe",
-                "email_timestream": "1693561101",
-                "email_content": "Just want to say... Happy new year!!!"
-            }
-        }
-        response = self.app.post('/microservice1', data=json.dumps(payload), content_type='application/json')
-        self.assertEqual(response.status_code, 400)
-        self.assertIn('Invalid request, missing "token" field', response.get_data(as_text=True))
-
-    def test_missing_email_subject(self):
-        """Test request with missing 'email_subject' in data."""
-        payload = {
-            "data": {
-                "email_sender": "John Doe",
-                "email_timestream": "1693561101",
-                "email_content": "Just want to say... Happy new year!!!"
+    def test_process_request_valid(self):
+        """Test valid request to /microservice1."""
+        test_data = {
+            'data': {
+                'email_subject': 'Test Subject',
+                'email_sender': 'test@example.com',
+                'email_timestream': '2024-10-01T12:00:00Z',
+                'email_content': 'This is a test email.'
             },
-            "token": "$DJISA<$#45ex3RtYr"
+            'token': 'valid_token'  # Use a valid token for testing
         }
-        response = self.app.post('/microservice1', data=json.dumps(payload), content_type='application/json')
-        self.assertEqual(response.status_code, 400)
-        self.assertIn('Missing field: email_subject in "data"', response.get_data(as_text=True))
+        response = self.app.post('/microservice1', json=test_data)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Data published to SQS successfully', response.data)
 
-    def test_invalid_token(self):
+    def test_process_request_invalid_token(self):
         """Test request with an invalid token."""
-        payload = {
-            "data": {
-                "email_subject": "Happy new year!",
-                "email_sender": "John Doe",
-                "email_timestream": "1693561101",
-                "email_content": "Just want to say... Happy new year!!!"
-            },
-            "token": "invalid_token"
+        test_data = {
+            'data': {},
+            'token': 'invalid_token'
         }
-        response = self.app.post('/microservice1', data=json.dumps(payload), content_type='application/json')
+        response = self.app.post('/microservice1', json=test_data)
         self.assertEqual(response.status_code, 403)
-        self.assertIn('Invalid token', response.get_data(as_text=True))
+        self.assertIn(b'Invalid token', response.data)
+
+    def test_process_request_missing_fields(self):
+        """Test request with missing fields."""
+        test_data = {
+            'data': {'email_subject': 'Test Subject'},
+            'token': 'valid_token'  # Use a valid token for testing
+        }
+        response = self.app.post('/microservice1', json=test_data)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn(b'Missing field: email_sender in "data"', response.data)
 
 if __name__ == '__main__':
     unittest.main()

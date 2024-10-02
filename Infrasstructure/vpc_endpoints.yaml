@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: "End points to the aws services for more secured approch"
+Description: "Endpoints to AWS services for a more secure approach"
 
 Resources:
   # Gateway Endpoint - S3
@@ -12,7 +12,7 @@ Resources:
         - !ImportValue PrivateRouteTableId
       VpcEndpointType: Gateway
 
-  # Interface Endpoint - secret manager
+  # Interface Endpoint - Secrets Manager
   SecretsManagerInterfaceEndpoint:
     Type: AWS::EC2::VPCEndpoint
     Properties:
@@ -38,6 +38,20 @@ Resources:
       SecurityGroupIds:
         - !Ref EndpointSecurityGroup
 
+  # Interface Endpoint - EFS
+  EFSInterfaceEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !ImportValue VpcId
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.elasticfilesystem"
+      PrivateDnsEnabled: true
+      VpcEndpointType: Interface
+      SubnetIds:
+        - !ImportValue PrivateSubnetId
+      SecurityGroupIds:
+        - !Ref EndpointSecurityGroup
+
+  # Security Group for VPC Endpoints
   EndpointSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties: 

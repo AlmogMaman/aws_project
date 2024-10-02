@@ -51,6 +51,9 @@ Resources:
             - Name: SECRET_MANAGER_URI
               Value: !ImportValue MySecretURI
 
+            - Name: AWS_REGION
+              Value: !Sub "${AWS::Region}"
+
   Microservice1Service:
     Type: AWS::ECS::Service
     Properties:
@@ -96,6 +99,9 @@ Resources:
             #In seconds
             - Name: PULL_MESSAGE_INTERVAL
               Value: !Ref PullMessageInterval
+
+            - Name: AWS_REGION
+              Value: !Sub "${AWS::Region}"
 
   Microservice2Service:
     Type: AWS::ECS::Service

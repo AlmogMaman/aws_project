@@ -120,6 +120,19 @@ Resources:
                   - "arn:aws:s3:::almog-maman-cloudformation-files"
 
 
+              # Permissions for EFS
+              - Effect: Allow
+                Action:
+                  - efs:CreateMountTarget
+                  - efs:DescribeFileSystems
+                  - efs:DescribeMountTargets
+                  - efs:DescribeAccessPoints
+                  - efs:CreateAccessPoint
+                  - efs:DeleteAccessPoint
+                  - efs:AttachAccessPoint
+                Resource: "*"
+
+
 Outputs:
   Microservice1TaskRoleArn:
     Description: "Microservice1TaskRole Arn"

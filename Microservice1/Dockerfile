@@ -1,0 +1,26 @@
+# Use a smaller base image
+FROM python:3.9-slim
+
+#  recommended for security
+RUN useradd -m myuser
+
+# Set the working directory
+WORKDIR /app
+
+# Copy only the requirements file first for better caching
+COPY requirements.txt ./
+
+# Install required packages
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the application files
+COPY app.py ./
+COPY index.html ./templates/
+
+# Expose port 80
+EXPOSE 80
+
+# Run the application as a non-root user
+USER myuser
+
+CMD ["python", "./app.py"]

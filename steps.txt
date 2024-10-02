@@ -28,3 +28,31 @@ Internet.
 *) USE IAN roles for princeple of least privilage. 
 *)I use s3 bucket to store my cloudformation templates, I am using nested stacks.
 The files in the s3 bucket are the same as in the git repo.
+*)For getting the password to genkins. need to ssh via vpc endpoint. i created the endpoint. the password saved in this file : /var/jenkins_home/secrets/initialAdminPassword
+*)create and use EC2InstanceConnectEndpoint for connecting to jenkins
+
+*)Two options to reach the application:
+1. via the browser. simple UI.
+2. via curl or other tool via http post request. with the payload as the assignment file.
+
+
+
+NOTE:
+
+~/.docker/config.json
+
+DOCKER CONFIG FILE:
+{
+	"auths": {
+		"public.ecr.aws": {}
+	},
+	"currentContext": "default",
+	"plugins": {
+		"-x-cli-hints": {
+			"enabled": "true"
+		}
+	}
+}
+
+
+aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws

@@ -34,3 +34,15 @@ aws cloudformation update-stack \
   --parameters ParameterKey=MyOptionalParameter,UsePreviousValue=true
 
 
+
+microservice1
+
+docker build -t my-flask-app .
+
+docker run -e SQS_QUEUE_URL="your_sqs_queue_url" -p 80:80 my-flask-app
+
+microservice2
+
+docker build -t my-sqs-s3-app .
+
+docker run -e SQS_QUEUE_URL="your_sqs_queue_url" -e S3_BUCKET_NAME="your_s3_bucket_name" my-sqs-s3-app

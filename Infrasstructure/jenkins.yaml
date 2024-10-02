@@ -33,10 +33,15 @@ Resources:
           FromPort: 50000
           ToPort: 50000
           SourceSecurityGroupId: !ImportValue LoadBalancerSecurityGroupId 
-        # - IpProtocol: tcp
-        #   FromPort: 22
-        #   ToPort: 22
-        #   CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+          #For EFS:
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          CidrIp: 0.0.0.0/0
         # - IpProtocol: tcp
         #   FromPort: 443
         #   ToPort: 443
@@ -80,26 +85,61 @@ Resources:
               VolumeSize: 50
         UserData:
           Fn::Base64: !Sub |
-            #!/bin/bash
-            yum update -y
-            yum install -y docker
-            systemctl start docker
-            systemctl enable docker
-            yum install -y amazon-efs-utils
-            mkdir /mnt/efs
-            mount -t efs -o tls ${JenkinsEFS}:/ /mnt/efs
-            echo "${JenkinsEFS}:/ /mnt/efs efs defaults,_netdev 0 0" >> /etc/fstab
-            mkdir /mnt/efs/jenkins_home
-            chown ec2-user:ec2-user /mnt/efs/jenkins_home
+                #!/bin/bash
 
-            # Jenkins setup
-            docker run -d -p 8080:8080 -p 50000:50000 \
-              -v /mnt/efs/jenkins_home:/var/jenkins_home \
-              --env MICRO_SERVICE1_IMAGE=!Ref Microservice1Image \
-              --env MICRO_SERVICE1_VERSION=!Ref Microservice1Version \
-              --env MICRO_SERVICE2_IMAGE=!Ref Microservice2Image \
-              --env MICRO_SERVICE2_VERSION=!Ref Microservice2Version \
-              jenkins/jenkins:lts
+                # Function to wait for yum to become available
+                wait_for_yum() {
+                    while fuser /var/lib/rpm/.rpm.lock >/dev/null 2>&1; do
+                        echo "Waiting for yum to become available..."
+                        sleep 5
+                    done
+                }
+
+                # Function to wait for the Jenkins container to be ready
+                wait_for_jenkins() {
+                    while ! sudo docker ps --filter "name=jenkins" --filter "status=running" | grep -q jenkins; do
+                        echo "Waiting for Jenkins to start..."
+                        sleep 5
+                    done
+                }
+
+                # Update packages and install dependencies
+                wait_for_yum
+                sudo yum update -y
+                wait_for_yum
+                sudo yum install -y python2-botocore
+                sudo pip install botocore
+                wait_for_yum
+                sudo yum install -y docker amazon-efs-utils
+
+                # Start and enable Docker
+                sudo systemctl start docker
+                sudo systemctl enable docker
+
+                # Create and mount EFS
+                sudo mkdir -p /mnt/efs
+                sudo mount -t efs -o tls ${JenkinsEFS}:/ /mnt/efs
+                echo "${JenkinsEFS}:/ /mnt/efs efs defaults,_netdev 0 0" | sudo tee -a /etc/fstab
+
+                # Set up Jenkins home directory
+                sudo mkdir -p /mnt/efs/jenkins_home
+                sudo chown ec2-user:ec2-user /mnt/efs/jenkins_home
+
+                # Run Jenkins Docker container with a name
+                sudo docker run -d -p 8080:8080 -p 50000:50000 \
+                    -v /mnt/efs/jenkins_home:/var/jenkins_home \
+                    --env MICRO_SERVICE1_IMAGE=${Microservice1Image} \
+                    --env MICRO_SERVICE1_VERSION=${Microservice1Version} \
+                    --env MICRO_SERVICE2_IMAGE=${Microservice2Image} \
+                    --env MICRO_SERVICE2_VERSION=${Microservice2Version} \
+                    --name jenkins \
+                    public.ecr.aws/y3c6e3y9/jenkins/jenkins:2.332.3-jdk11
+
+                # Wait for Jenkins to start and retrieve the initial admin password
+                wait_for_jenkins
+                sudo docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword > ~/password.txt
+                echo "Initial admin password saved to ~/password.txt."
+
 
   # IAM Role for Jenkins EC2 Instance
   JenkinsInstanceProfile:
@@ -125,11 +165,10 @@ Resources:
           Value: JenkinsInstance
           PropagateAtLaunch: true
       TargetGroupARNs:
-        - !ImportValue TargetGroup8080Arn
+        - !ImportValue TargetGroup8080Arn # TargetGroup8080Arn
 
 
 Outputs:
-  JenkinsAdminPassword:
-    Description: "Initial admin password for Jenkins"
-    Value: !Sub |
-      cat /mnt/efs/jenkins_home/secrets/initialAdminPassword
+  JenkinsAdminPasswordFile:
+    Description: "The initial admin password for Jenkins can be found at:"
+    Value: !Sub "/var/jenkins_home/secrets/initialAdminPassword"
