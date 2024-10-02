@@ -13,13 +13,13 @@ Parameters:
 
   Microservice1Version:
     Type: String
-    Default: latest
+    Default: 3
     Description: The version of the microservice1
   
 
   Microservice2Version:
     Type: String
-    Default: latest
+    Default: 3
     Description: The version of the microservice2
 
   JenkinsInstanceType:
