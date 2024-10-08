@@ -1,0 +1,48 @@
+#Create stack
+aws cloudformation create-stack \
+  --stack-name MyStack \
+  --template-body file://mytemplate.yaml \
+  --parameters file://myparameters.yaml
+
+  aws cloudformation create-stack \
+  --stack-name MyStack \
+  --template-body file://mytemplate.yaml \
+  --parameters file://parameters.yaml \
+               ParameterKey=InstanceType,ParameterValue=t2.micro
+
+
+
+
+
+
+
+#Update Stack
+aws cloudformation update-stack \
+  --stack-name MyStack \
+  --template-body file://mytemplate.yaml \
+  --parameters file://parameters.yaml
+
+  aws cloudformation update-stack \
+  --stack-name MyStack \
+  --template-body file://mytemplate.yaml \
+  --parameters file://parameters.yaml \
+               ParameterKey=InstanceType,ParameterValue=t2.micro
+
+aws cloudformation update-stack \
+  --stack-name my-stack \
+  --template-body file://my-template.yaml \
+  --parameters ParameterKey=MyOptionalParameter,UsePreviousValue=true
+
+
+
+microservice1
+
+docker build -t my-flask-app .
+
+docker run -e SQS_QUEUE_URL="your_sqs_queue_url" -p 80:80 my-flask-app
+
+microservice2
+
+docker build -t my-sqs-s3-app .
+
+docker run -e SQS_QUEUE_URL="your_sqs_queue_url" -e S3_BUCKET_NAME="your_s3_bucket_name" my-sqs-s3-app

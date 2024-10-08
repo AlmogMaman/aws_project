@@ -1,0 +1,209 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'ECS Cluster and services for the project'
+
+Parameters:
+  PullMessageInterval:
+    Type: String
+    
+  Microservice1Version:
+    Type: String
+  
+  Microservice2Version:
+    Type: String
+  
+  Microservice1Image:
+    Type: String
+
+  Microservice2Image:
+    Type: String
+
+  M1Port:
+    Type: Number
+
+  M2Port:
+    Type: Number
+
+Resources:
+  MyLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/ecs
+      RetentionInDays: 7
+
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: "MyECSCluster"
+
+  Microservice1TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: microservice1
+      Cpu: 2048 #256
+      Memory: 5120 #512
+      NetworkMode: awsvpc
+      RequiresCompatibilities: [FARGATE]
+      ExecutionRoleArn: !ImportValue Microservice1TaskRoleArn
+      TaskRoleArn: !ImportValue Microservice1TaskRoleArn
+      ContainerDefinitions:
+        - Name: microservice1
+          Image: !Sub "${Microservice1Image}:${Microservice1Version}"
+          LogConfiguration:
+            LogDriver: "awslogs"
+            Options:
+              awslogs-group: !Ref MyLogGroup
+              awslogs-region: !Ref "AWS::Region"
+              awslogs-stream-prefix: "ecs"
+          PortMappings:
+            - ContainerPort: !Ref M1Port
+          Essential: true
+          Environment:
+            - Name: SQS_QUEUE_URI
+              Value: !ImportValue MySQSQueueURI
+            
+            - Name: SECRET_MANAGER_URI
+              Value: !ImportValue MySecretURI
+
+            - Name: AWS_REGION
+              Value: !Sub "${AWS::Region}"
+
+
+  Microservice1Service:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref Microservice1TaskDefinition
+      LoadBalancers:
+        - ContainerName: microservice1
+          ContainerPort: !Ref M1Port
+          TargetGroupArn: !ImportValue TargetGroup8081Arn
+      DesiredCount: 1 #1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          Subnets:
+            - !ImportValue PrivateSubnetId
+          SecurityGroups: 
+            - !Ref Microservice1Sg
+    DependsOn: 
+      - Microservice1TaskDefinition
+
+  Microservice2TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: microservice2
+      Cpu: 2048 #256
+      Memory: 5120 #512
+      NetworkMode: awsvpc
+      RequiresCompatibilities: [FARGATE]
+      ExecutionRoleArn: !ImportValue Microservice2TaskRoleArn
+      TaskRoleArn: !ImportValue Microservice2TaskRoleArn
+      ContainerDefinitions:
+        - Name: microservice2
+          Image: !Sub "${Microservice2Image}:${Microservice2Version}"
+          LogConfiguration:
+            LogDriver: "awslogs"
+            Options:
+              awslogs-group: !Ref MyLogGroup
+              awslogs-region: !Ref "AWS::Region"
+              awslogs-stream-prefix: "ecs"
+          PortMappings:
+            - ContainerPort: !Ref M2Port
+          Essential: true
+          Environment:
+            - Name: SQS_QUEUE_URI
+              Value: !ImportValue MySQSQueueURI
+            
+            - Name: S3_BUCKET_NAME
+              Value: !ImportValue MyS3BucketName
+
+            #In seconds
+            - Name: PULL_MESSAGE_INTERVAL
+              Value: !Ref PullMessageInterval
+
+            - Name: AWS_REGION
+              Value: !Sub "${AWS::Region}"
+
+  Microservice2Service:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref Microservice2TaskDefinition
+      LoadBalancers:
+        - ContainerName: microservice2
+          ContainerPort: !Ref M2Port
+          TargetGroupArn: !ImportValue TargetGroup8082Arn
+      DesiredCount: 1 #1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          Subnets: 
+            - !ImportValue PrivateSubnetId
+          SecurityGroups: 
+            - !Ref Microservice2Sg
+    DependsOn: 
+      - Microservice2TaskDefinition  
+
+
+
+#Security Groups
+#########
+  Microservice1Sg:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for ECS tasks
+      VpcId: !ImportValue VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: !Ref M1Port
+          ToPort: !Ref M1Port
+          SourceSecurityGroupId: !ImportValue LoadBalancerSecurityGroupId
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0  # Allow all outbound traffic (for access to internet via NAT Gateway)
+  
+  Microservice2Sg:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for ECS tasks
+      VpcId: !ImportValue VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: !Ref M2Port
+          ToPort: !Ref M2Port
+          SourceSecurityGroupId: !ImportValue LoadBalancerSecurityGroupId
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0  # Allow all outbound traffic (for access to internet via NAT Gateway)
+
+
+Outputs: 
+  Microservice1Version:
+    Description: "microservice1 versio"
+    Value: !Ref Microservice1Version
+    Export:
+      Name: Microservice1Version
+  
+
+  Microservice2Version:
+    Description: "microservice2 versio"
+    Value: !Ref Microservice2Version
+    Export:
+      Name: Microservice2Version
+  
+  Microservice1Image:
+    Description: "microservice1 Image Path"
+    Value: !Ref Microservice1Image
+    Export:
+      Name: Microservice1Image
+
+  Microservice2Image:
+    Description: "microservice2 Image Path"
+    Value: !Ref Microservice2Image
+    Export:
+      Name: Microservice2Image
+
+  LogGroupArn:
+    Description: "The ARN of the CloudWatch Logs log group"
+    Value: !GetAtt MyLogGroup.Arn
+

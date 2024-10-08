@@ -1,0 +1,171 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Jenkins for CI/CD.'
+
+Parameters:
+  JenkinsInstanceType:
+    Type: String
+
+  Microservice1Version:
+    Type: String
+  
+  Microservice2Version:
+    Type: String
+  
+  Microservice1Image:
+    Type: String
+
+  Microservice2Image:
+    Type: String
+
+Resources:
+  # Security Group for Jenkins EC2 instance - allowing ingress from ALB only and egress to all
+  JenkinsSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Allow ingress from ALB only and egress to all"
+      VpcId: !ImportValue VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          SourceSecurityGroupId: !ImportValue LoadBalancerSecurityGroupId
+        - IpProtocol: tcp
+          FromPort: 50000
+          ToPort: 50000
+          SourceSecurityGroupId: !ImportValue LoadBalancerSecurityGroupId 
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+          #For EFS:
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          CidrIp: 0.0.0.0/0
+        
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+
+
+  # EFS File System for shared storage between Jenkins instances
+  JenkinsEFS:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      Encrypted: true
+
+  JenkinsEFSMountTarget1:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref JenkinsEFS
+      SubnetId: !ImportValue PrivateSubnetId
+      SecurityGroups:
+        - !Ref JenkinsSecurityGroup
+
+
+  # Launch Template for Jenkins EC2 instances
+  JenkinsLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        ImageId: !Sub "{{resolve:ssm:/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2}}"
+        InstanceType: !Ref JenkinsInstanceType
+        SecurityGroupIds:
+          - !Ref JenkinsSecurityGroup
+        IamInstanceProfile:
+          Name: !Ref JenkinsInstanceProfile
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvda
+            Ebs:
+              VolumeSize: 50
+        UserData:
+          Fn::Base64: !Sub |
+                #!/bin/bash
+
+                # Function to wait for yum to become available
+                wait_for_yum() {
+                    while fuser /var/lib/rpm/.rpm.lock >/dev/null 2>&1; do
+                        echo "Waiting for yum to become available..."
+                        sleep 5
+                    done
+                }
+
+                # Function to wait for the Jenkins container to be ready
+                wait_for_jenkins() {
+                    while ! sudo docker ps --filter "name=jenkins" --filter "status=running" | grep -q jenkins; do
+                        echo "Waiting for Jenkins to start..."
+                        sleep 5
+                    done
+                }
+
+                # Update packages and install dependencies
+                wait_for_yum
+                sudo yum update -y
+                wait_for_yum
+                sudo yum install -y python2-botocore
+                sudo pip install botocore
+                wait_for_yum
+                sudo yum install -y docker amazon-efs-utils
+
+                # Start and enable Docker
+                sudo systemctl start docker
+                sudo systemctl enable docker
+
+                # Create and mount EFS
+                sudo mkdir -p /mnt/efs
+                sudo mount -t efs -o tls ${JenkinsEFS}:/ /mnt/efs
+                echo "${JenkinsEFS}:/ /mnt/efs efs defaults,_netdev 0 0" | sudo tee -a /etc/fstab
+
+                # Set up Jenkins home directory
+                sudo mkdir -p /mnt/efs/jenkins_home
+                sudo chown ec2-user:ec2-user /mnt/efs/jenkins_home
+
+                # Run Jenkins Docker container with a name
+                sudo docker run -d -p 8080:8080 -p 50000:50000 \
+                    -v /mnt/efs/jenkins_home:/var/jenkins_home \
+                    --env MICRO_SERVICE1_IMAGE=${Microservice1Image} \
+                    --env MICRO_SERVICE1_VERSION=${Microservice1Version} \
+                    --env MICRO_SERVICE2_IMAGE=${Microservice2Image} \
+                    --env MICRO_SERVICE2_VERSION=${Microservice2Version} \
+                    --name jenkins \
+                    public.ecr.aws/y3c6e3y9/jenkins/jenkins:2.332.3-jdk11
+
+                # Wait for Jenkins to start and retrieve the initial admin password
+                wait_for_jenkins
+                sudo docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword > ~/password.txt
+                echo "Initial admin password saved to ~/password.txt."
+
+
+  # IAM Role for Jenkins EC2 Instance
+  JenkinsInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !ImportValue JenkinsEC2RoleArn
+
+  # Auto Scaling Group
+  JenkinsAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier:
+        - !ImportValue PrivateSubnetId
+      LaunchTemplate:
+        LaunchTemplateId: !Ref JenkinsLaunchTemplate
+        Version: !GetAtt JenkinsLaunchTemplate.LatestVersionNumber
+      MinSize: 1
+      MaxSize: 4
+      DesiredCapacity: 1
+      Tags:
+        - Key: Name
+          Value: JenkinsInstance
+          PropagateAtLaunch: true
+      TargetGroupARNs:
+        - !ImportValue TargetGroup8080Arn # TargetGroup8080Arn
+
+
+Outputs:
+  JenkinsAdminPasswordFile:
+    Description: "The initial admin password for Jenkins can be found at:"
+    Value: !Sub "/var/jenkins_home/secrets/initialAdminPassword"

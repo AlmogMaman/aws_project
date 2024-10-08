@@ -1,0 +1,164 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'IAM roles for the project'
+
+
+Resources:
+  Microservice1TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: Microservice1Policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage  #Sends messages to SQS
+                Resource: !ImportValue MySQSQueueArn
+              
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue  # Access secret from Secrets Manager
+                Resource: !ImportValue MySecretArn
+
+              - Effect: Allow
+                Action:
+                  - ecr-public:GetDownloadUrlForLayer
+                  - ecr-public:BatchCheckLayerAvailability
+                  - ecr-public:BatchGetImage
+                Resource: 
+                  - "arn:aws:ecr-public:::public.ecr.aws/v3k2f6k7/microservice1"
+              - Effect: Allow
+                Action: "logs:*"
+                Resource: "*"
+
+  Microservice2TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: Microservice2Policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                Resource: !ImportValue MySQSQueueArn
+              
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource: !ImportValue MyS3BucketArn
+
+              - Effect: Allow
+                Action:
+                  - ecr-public:GetDownloadUrlForLayer
+                  - ecr-public:BatchCheckLayerAvailability
+                  - ecr-public:BatchGetImage
+                Resource: 
+                  - "arn:aws:ecr-public:::public.ecr.aws/v3k2f6k7/microservice2"
+              - Effect: Allow
+                Action: "logs:*"
+                Resource: "*"
+              
+
+  JenkinsEC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: JenkinsECRCloudFormationPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecr-public:GetDownloadUrlForLayer
+                  - ecr-public:BatchCheckLayerAvailability
+                  - ecr-public:BatchGetImage
+                  - ecr-public:PutImage
+                Resource:
+                  - "arn:aws:ecr-public:::public.ecr.aws/v3k2f6k7/microservice1"
+                  - "arn:aws:ecr-public:::public.ecr.aws/v3k2f6k7/microservice2"
+              - Effect: Allow
+                Action:
+                  - cloudformation:DescribeStacks
+                  - cloudformation:DescribeChangeSet
+                  - cloudformation:CreateChangeSet
+                  - cloudformation:ExecuteChangeSet
+                  - cloudformation:UpdateStack
+                Resource: "*"
+              
+              #For getting the latest linux AMI
+              - Effect: Allow
+                Action:
+                  - "ssm:GetParameter"
+                  - "ssm:GetParameters"
+                  - "ssm:GetParametersByPath"
+                Resource: 
+                  - "arn:aws:ssm:*:*:parameter/aws/service/ami-amazon-linux-latest/*"
+
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource: 
+                  - "arn:aws:s3:::almog-maman-cloudformation-files"
+
+
+              # Permissions for EFS
+              - Effect: Allow
+                Action:
+                  - efs:CreateMountTarget
+                  - efs:DescribeFileSystems
+                  - efs:DescribeMountTargets
+                  - efs:DescribeAccessPoints
+                  - efs:CreateAccessPoint
+                  - efs:DeleteAccessPoint
+                  - efs:AttachAccessPoint
+                Resource: "*"
+              - Effect: Allow
+                Action: "logs:*"
+                Resource: "*"
+
+
+Outputs:
+  Microservice1TaskRoleArn:
+    Description: "Microservice1TaskRole Arn"
+    Value: !Ref Microservice1TaskRole
+    Export:
+      Name: Microservice1TaskRoleArn
+
+
+  Microservice2TaskRoleArn:
+    Description: "Microservice2TaskRole Arn"
+    Value: !Ref Microservice2TaskRole
+    Export:
+      Name: Microservice2TaskRoleArn
+
+  JenkinsEC2RoleArn:
+    Description: "JenkinsEC2RoleId Arn"
+    Value: !Ref JenkinsEC2Role
+    Export:
+      Name: JenkinsEC2RoleArn

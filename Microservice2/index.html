@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQS to S3 Message Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 50px;
+        }
+        h1 {
+            color: #333;
+        }
+        p {
+            font-size: 1.5em;
+            color: #666;
+        }
+        .count {
+            font-size: 2em;
+            color: #007BFF;
+            font-weight: bold;
+        }
+    </style>
+    <script>
+        // Function to fetch and update the message count
+        function updateMessageCount() {
+            fetch('/get_message_count')
+                .then(response => response.json())
+                .then(data => {
+                    document.querySelector('.count').textContent = data.message_count;
+                })
+                .catch(error => console.error('Error fetching message count:', error));
+        }
+
+        // Update the message count every 5 seconds
+        setInterval(updateMessageCount, 5000);
+
+        // Initial call to display message count when page loads
+        window.onload = updateMessageCount;
+    </script>
+</head>
+<body>
+    <h1>SQS to S3 Message Tracker</h1>
+    <p>Number of messages sent to S3:</p>
+    <p class="count">Loading...</p>
+</body>
+</html>

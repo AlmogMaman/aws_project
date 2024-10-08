@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "The aws services the projest uses"
+
+
+Parameters:
+  Token:
+    Type: String
+    Description: The Token that we need for validate the messages. Must insert when creating the stack.
+
+Resources:
+  MyS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: "project-bucket-456456789546545"
+
+  MySQSQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: "project-queue.fifo"
+      FifoQueue: true  
+      ContentBasedDeduplication: true
+      Tags:
+        - Key: Name
+          Value: MyFifoQueue
+
+  MySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: "Token"
+      Description: "This is a Token for my project"
+      SecretString: !Ref Token
+
+Outputs:
+  MyS3BucketURI:
+    Description: "The URI of the S3 bucket"
+    Value: !Sub "https://s3.${AWS::Region}.amazonaws.com/${MyS3Bucket}"
+    Export:
+      Name: MyS3BucketURI
+
+  MyS3BucketArn:
+    Description: "The Arn of the S3 bucket"
+    Value: !GetAtt MyS3Bucket.Arn
+    Export:
+      Name: MyS3BucketArn
+
+  MyS3BucketName:
+    Description: "The name of the S3 bucket"
+    Value: !Ref MyS3Bucket
+    Export:
+      Name: MyS3BucketName
+
+  ########
+  MySQSQueueURI:
+    Description: "The URI of the SQS queue"
+    Value: !Ref MySQSQueue
+    Export:
+      Name: MySQSQueueURI
+
+  MySQSQueueArn:
+    Description: "The URI of the SQS queue"
+    Value: !GetAtt MySQSQueue.Arn
+    Export:
+      Name: MySQSQueueArn
+  #######
+  MySecretURI:
+    Description: "The URI of the Secrets Manager secret"
+    Value: !Sub "https://secretsmanager.${AWS::Region}.amazonaws.com/secrets/${MySecret}/"
+    Export:
+      Name: MySecretURI
+
+  MySecretArn:
+    Description: "MySecret Arn"
+    Value: !Ref MySecret
+    Export:
+      Name: MySecretArn

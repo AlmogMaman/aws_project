@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Send Message to SQS</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f4f8;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+
+        h2 {
+            color: #555;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            font-weight: normal;
+        }
+
+        label {
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+            display: block;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+            font-weight: bold;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            h2 {
+                font-size: 1.2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to the SQS Message Sender</h1>
+        <h2>Quickly send messages to your SQS queue</h2>
+        <form id="messageForm">
+            <label for="email_subject">Email Subject:</label>
+            <input type="text" id="email_subject" name="email_subject" placeholder="Enter email subject" required>
+
+            <label for="email_sender">Email Sender:</label>
+            <input type="text" id="email_sender" name="email_sender" placeholder="Enter email sender" required>
+
+            <label for="email_timestream">Email Timestream:</label>
+            <input type="text" id="email_timestream" name="email_timestream" placeholder="Enter email Timestream" required>
+
+            <label for="email_content">Email Content:</label>
+            <textarea id="email_content" name="email_content" placeholder="Enter email content" required rows="4"></textarea>
+
+            <label for="token">Token:</label>
+            <input type="text" id="token" name="token" placeholder="Enter your token" required>
+
+            <button type="submit">Send Message</button>
+        </form>
+
+        <div id="message" class="message"></div>
+    </div>
+
+    <script>
+    document.getElementById('messageForm').onsubmit = async function(event) {
+            event.preventDefault();
+            
+            // Collect form data
+            const formData = new FormData(this);
+            const data = {
+                email_subject: formData.get('email_subject'),
+                email_sender: formData.get('email_sender'),
+                email_timestream: formData.get('email_timestream'),
+                email_content: formData.get('email_content')
+            };
+            
+            const token = formData.get('token'); // Collect the token separately
+
+            // Send payload with "data" and "token" fields
+            const payload = {
+                data: data,
+                token: token
+            };
+
+            const response = await fetch('/microservice1', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            const messageDiv = document.getElementById('message');
+            messageDiv.style.display = 'block';
+
+            if (response.ok) {
+                messageDiv.className = 'message success';
+                messageDiv.textContent = 'Message sent successfully!';
+            } else {
+                messageDiv.className = 'message error';
+                messageDiv.textContent = 'Error: ' + result.error;
+            }
+        };
+    </script>
+</body>
+</html>
