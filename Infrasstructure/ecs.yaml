@@ -24,6 +24,12 @@ Parameters:
     Type: Number
 
 Resources:
+  MyLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/ecs
+      RetentionInDays: 7
+
   ECSCluster:
     Type: AWS::ECS::Cluster
     Properties:
@@ -38,9 +44,16 @@ Resources:
       NetworkMode: awsvpc
       RequiresCompatibilities: [FARGATE]
       ExecutionRoleArn: !ImportValue Microservice1TaskRoleArn
+      TaskRoleArn: !ImportValue Microservice1TaskRoleArn
       ContainerDefinitions:
         - Name: microservice1
           Image: !Sub "${Microservice1Image}:${Microservice1Version}"
+          LogConfiguration:
+            LogDriver: "awslogs"
+            Options:
+              awslogs-group: !Ref MyLogGroup
+              awslogs-region: !Ref "AWS::Region"
+              awslogs-stream-prefix: "ecs"
           PortMappings:
             - ContainerPort: !Ref M1Port
           Essential: true
@@ -53,6 +66,7 @@ Resources:
 
             - Name: AWS_REGION
               Value: !Sub "${AWS::Region}"
+
 
   Microservice1Service:
     Type: AWS::ECS::Service
@@ -83,9 +97,16 @@ Resources:
       NetworkMode: awsvpc
       RequiresCompatibilities: [FARGATE]
       ExecutionRoleArn: !ImportValue Microservice2TaskRoleArn
+      TaskRoleArn: !ImportValue Microservice2TaskRoleArn
       ContainerDefinitions:
         - Name: microservice2
           Image: !Sub "${Microservice2Image}:${Microservice2Version}"
+          LogConfiguration:
+            LogDriver: "awslogs"
+            Options:
+              awslogs-group: !Ref MyLogGroup
+              awslogs-region: !Ref "AWS::Region"
+              awslogs-stream-prefix: "ecs"
           PortMappings:
             - ContainerPort: !Ref M2Port
           Essential: true
@@ -93,8 +114,8 @@ Resources:
             - Name: SQS_QUEUE_URI
               Value: !ImportValue MySQSQueueURI
             
-            - Name: S3_BUCKET_URI
-              Value: !ImportValue MyS3BucketURI
+            - Name: S3_BUCKET_NAME
+              Value: !ImportValue MyS3BucketName
 
             #In seconds
             - Name: PULL_MESSAGE_INTERVAL
@@ -181,3 +202,8 @@ Outputs:
     Value: !Ref Microservice2Image
     Export:
       Name: Microservice2Image
+
+  LogGroupArn:
+    Description: "The ARN of the CloudWatch Logs log group"
+    Value: !GetAtt MyLogGroup.Arn
+

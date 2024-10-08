@@ -35,6 +35,9 @@ Resources:
                   - ecr-public:BatchGetImage
                 Resource: 
                   - "arn:aws:ecr-public:::public.ecr.aws/v3k2f6k7/microservice1"
+              - Effect: Allow
+                Action: "logs:*"
+                Resource: "*"
 
   Microservice2TaskRole:
     Type: AWS::IAM::Role
@@ -69,6 +72,10 @@ Resources:
                   - ecr-public:BatchGetImage
                 Resource: 
                   - "arn:aws:ecr-public:::public.ecr.aws/v3k2f6k7/microservice2"
+              - Effect: Allow
+                Action: "logs:*"
+                Resource: "*"
+              
 
   JenkinsEC2Role:
     Type: AWS::IAM::Role
@@ -130,6 +137,9 @@ Resources:
                   - efs:CreateAccessPoint
                   - efs:DeleteAccessPoint
                   - efs:AttachAccessPoint
+                Resource: "*"
+              - Effect: Allow
+                Action: "logs:*"
                 Resource: "*"
 
 

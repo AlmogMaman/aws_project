@@ -43,6 +43,12 @@ Outputs:
     Export:
       Name: MyS3BucketArn
 
+  MyS3BucketName:
+    Description: "The name of the S3 bucket"
+    Value: !Ref MyS3Bucket
+    Export:
+      Name: MyS3BucketName
+
   ########
   MySQSQueueURI:
     Description: "The URI of the SQS queue"

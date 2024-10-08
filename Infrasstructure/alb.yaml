@@ -125,21 +125,6 @@ Resources:
     DependsOn: 
       - ALBListener
 
-  # ALBListenerRuleHealthCheckMicro1:
-  #   Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  #   Properties:
-  #     Actions:
-  #       - Type: forward
-  #         TargetGroupArn: !Ref TargetGroup8081
-  #     Conditions:
-  #       - Field: path-pattern
-  #         Values:
-  #           - /microservice1/health
-  #     ListenerArn: !Ref ALBListener
-  #     Priority: 2
-  #   DependsOn: 
-  #     - ALBListener
-
 
   #route to microservice2
   ALBListenerRuleMicroservice2:
@@ -157,20 +142,6 @@ Resources:
     DependsOn: 
       - ALBListener
 
-  # ALBListenerRuleHealthCheckMicro2:
-  #   Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  #   Properties:
-  #     Actions:
-  #       - Type: forward
-  #         TargetGroupArn: !Ref TargetGroup8082
-  #     Conditions:
-  #       - Field: path-pattern
-  #         Values:
-  #           - /microservice2/health
-  #     ListenerArn: !Ref ALBListener
-  #     Priority: 4
-  #   DependsOn: 
-  #     - ALBListener
 
 
   #route to jenkins
@@ -189,20 +160,6 @@ Resources:
     DependsOn: 
       - ALBListener
 
-  # ALBListenerRuleHealthCheckJenkins:
-  #   Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  #   Properties:
-  #     Actions:
-  #       - Type: forward
-  #         TargetGroupArn: !Ref TargetGroup8080
-  #     Conditions:
-  #       - Field: path-pattern
-  #         Values:
-  #           - /jenkins/health
-  #     ListenerArn: !Ref ALBListener
-  #     Priority: 6
-  #   DependsOn: 
-  #     - ALBListener
 
 Outputs:
   AlbUrl:

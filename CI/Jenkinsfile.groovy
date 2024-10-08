@@ -22,7 +22,7 @@ pipeline {
             steps {
                 script {
                     def serviceName = env.SERVICE_NAME
-                    sh "docker tag myuser/${serviceName}:latest ${env.REPO_URI}:latest"
+                    sh "docker tag myuser/${serviceName}:latest ${env.REPO_URI}:${VERSION}"
                     sh "docker push ${env.REPO_URI}:latest"
                 }
             }
@@ -44,7 +44,7 @@ pipeline {
     }
 }
 
-// Function to get the next version number (you'll need to implement this)
+
 def getNextVersion() {
     // Logic to fetch the current version from ECR and increment it
     return '1' // Placeholder

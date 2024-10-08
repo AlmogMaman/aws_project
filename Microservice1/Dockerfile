@@ -1,8 +1,6 @@
 # Use a smaller base image
 FROM python:3.9-slim
 
-#  recommended for security
-RUN useradd -m myuser
 
 # Set the working directory
 WORKDIR /app
@@ -20,7 +18,5 @@ COPY index.html ./templates/
 # Expose port 80
 EXPOSE 80
 
-# Run the application as a non-root user
-USER myuser
 
 CMD ["python", "./app.py"]

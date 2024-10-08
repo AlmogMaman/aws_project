@@ -19,8 +19,8 @@ pipeline {
 
                     sh """
                         aws cloudformation update-stack \
-                        --template-file path/to/${serviceName}-cloudformation.yaml \
-                        --stack-name ${serviceName}-stack \
+                        --template-url https://s3.amazonaws.com/almog-maman-cloudformation-files/main.yaml \
+                        --stack-name main \
                         --parameters ParameterKey=ImageUri,ParameterValue=${imageRepo}:${newVersion} \
                         --capabilities CAPABILITY_IAM
                     """
