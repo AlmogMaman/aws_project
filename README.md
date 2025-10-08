@@ -1,12 +1,12 @@
 # AWS Microservices Project
 
-A hands-on, production-minded example of a microservices system deployed on AWS with containerization, IaC, and CI/CD.
+A production-minded example of a **two-service Python system** deployed on **AWS** with **containers**, **Infrastructure as Code**, and **CI/CD**.
 
 > **Highlights**
-> - 2 Python-based microservices, containerized with Docker
-> - Infrastructure-as-Code for AWS (VPC, compute, and networking)
-> - CI for build/test/lint; CD for image delivery & deployment
-> - Clear local dev workflow and environment configuration
+> - 2 Python microservices (each with its own Dockerfile)
+> - CI to build/test/lint and publish images
+> - CD to deploy on AWS (ECS/EKS/EC2 — depending on infra)
+> - IaC in the repo for reproducible environments
 
 ---
 
@@ -15,16 +15,18 @@ A hands-on, production-minded example of a microservices system deployed on AWS 
 - [Architecture](#architecture)
 - [Repository Structure](#repository-structure)
 - [Tech Stack](#tech-stack)
-- [Getting Started (Local)](#getting-started-local)
-- [Running with Docker](#running-with-docker)
+- [Quick Start](#quick-start)
+- [Local Development](#local-development)
+- [Run with Docker](#run-with-docker)
 - [Environment Variables](#environment-variables)
 - [CI/CD](#cicd)
 - [Infrastructure](#infrastructure)
-- [Observability & Logs](#observability--logs)
+- [Observability](#observability)
 - [Testing & Quality](#testing--quality)
 - [Troubleshooting](#troubleshooting)
 - [Roadmap](#roadmap)
 - [License](#license)
+- [Maintainer](#maintainer)
 
 ---
 
@@ -51,157 +53,171 @@ Copy code
 yaml
 Copy code
 
-*Shared services may include: database, cache, message broker, or third-party APIs depending on your deployment choices.
+\* Shared services can include DB, cache, message broker, secrets, etc., depending on your infra setup.
 
 ---
 
 ## Repository Structure
 
 .
-├─ CI/ # Continuous Integration (e.g., Jenkins/Groovy or pipelines)
+├─ CI/ # Continuous Integration pipeline(s) (e.g. Jenkins/Groovy)
 ├─ CD/ # Continuous Delivery / deployment definitions
-├─ Infrasstructure/ # Infrastructure-as-Code (AWS) [typo kept to match folder]
-├─ Microservice1/ # Python microservice #1 (API + Dockerfile)
-├─ Microservice2/ # Python microservice #2 (API + Dockerfile)
-├─ steps.txt # Notes / setup steps used while building the project
+├─ Infrasstructure/ # Infrastructure-as-Code for AWS (name kept as-is)
+├─ Microservice1/ # Python microservice #1 (app + Dockerfile + reqs)
+├─ Microservice2/ # Python microservice #2 (app + Dockerfile + reqs)
+├─ steps.txt # Working notes / setup steps
 └─ .gitignore
 
-markdown
+yaml
 Copy code
-
-> Tip: Keep the folder name `Infrasstructure` as-is unless you also update all references in CI/CD scripts.
 
 ---
 
 ## Tech Stack
 
-- **Language:** Python (APIs), HTML (static UI if included)
+- **Language:** Python (APIs), possible HTML assets
 - **Containers:** Docker (one image per service)
-- **IaC:** Terraform or AWS CloudFormation (depending on what’s inside `Infrasstructure/`)
-- **CI/CD:** Jenkins/Groovy or other pipeline definitions under `CI/` and `CD/`
-- **AWS Targets:** ECS Fargate or EKS/EC2 (depending on infra definitions)
-- **Shell Scripts:** Utility scripts for build/test/deploy
+- **IaC:** Terraform or CloudFormation (see `Infrasstructure/`)
+- **CI/CD:** Jenkins/Groovy or platform under `CI/` and `CD/`
+- **AWS Targets:** ECS Fargate / EKS / EC2 (per infra)
+- **Shell Scripts:** Utilities for build/test/deploy
 
 ---
 
-## Getting Started (Local)
-
-> Prereqs:  
-> - Python 3.10+  
-> - `pip` / `venv`  
-> - Docker (optional for local)  
-
-### 1) Clone
+## Quick Start
 
 ```bash
+# 1) Clone
 git clone https://github.com/AlmogMaman/aws_project.git
 cd aws_project
-2) Setup Microservice 1
-bash
-Copy code
+
+# 2) (Optional) Use Python 3.10+ for local runs
+python --version
+
+# 3) Choose a service to run locally
 cd Microservice1
 python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+source .venv/bin/activate     # Windows: .venv\Scripts\activate
 pip install --upgrade pip
 pip install -r requirements.txt
-# Optional typical run commands:
-# uvicorn app:app --host 0.0.0.0 --port 8001
-# or: python app.py
-3) Setup Microservice 2
+
+# 4) Start the API (pick the right command for your framework)
+# FastAPI (Uvicorn):
+# uvicorn app:app --host 0.0.0.0 --port 8001 --reload
+# Flask:
+# export FLASK_APP=app.py && flask run --host 0.0.0.0 --port 8001
+# Generic:
+# python app.py
+Repeat for Microservice2 (usually port 8002).
+
+Local Development
+Create a virtual environment per service (Microservice1, Microservice2).
+
+Install dependencies from each service’s requirements.txt.
+
+Use uvicorn for FastAPI or flask run for Flask (adjust the port via env var if needed).
+
+Hot-reload: --reload (Uvicorn) or FLASK_DEBUG=1 for Flask.
+
+Common endpoints (suggested):
+
+GET /health – liveness
+
+GET /ready – readiness
+
+GET / – basic landing/status
+
+Run with Docker
+Each service includes a Dockerfile. Build and run locally:
+
 bash
 Copy code
-cd ../Microservice2
-python -m venv .venv
-source .venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
-# Optional typical run commands:
-# uvicorn app:app --host 0.0.0.0 --port 8002
-# or: python app.py
-If the services use Flask, use flask run (after setting FLASK_APP), or a python app.py entrypoint.
-If they use FastAPI, uvicorn app:app --reload is common.
-
-Running with Docker
-Each service should include its own Dockerfile.
-
-Build & Run Microservice 1
-bash
-Copy code
+# Microservice1
 cd Microservice1
 docker build -t ms1:local .
 docker run --rm -p 8001:8001 --env-file .env ms1:local
-Build & Run Microservice 2
-bash
-Copy code
+
+# Microservice2
 cd ../Microservice2
 docker build -t ms2:local .
 docker run --rm -p 8002:8002 --env-file .env ms2:local
-Adjust exposed ports to match the app’s configured port (e.g., 8000/8001/8002).
+If the container listens on a different port, update the host mapping accordingly (e.g., -p 8000:8000).
 
 Environment Variables
-Create a .env file in each microservice with the variables your app expects. Common patterns:
+Create a .env file inside each microservice with the variables the app expects. Example template:
 
 env
 Copy code
-# Example .env template
+# App
 APP_NAME=Microservice1
 APP_ENV=local
 PORT=8001
 
-# Example backing services
+# Backing services (examples)
 DB_URL=postgresql://user:pass@host:5432/dbname
 REDIS_URL=redis://host:6379/0
 EXTERNAL_API_BASE=https://api.example.com
-Never commit real secrets; prefer:
 
-Local: .env files ignored by Git
+# AWS (when running in cloud)
+AWS_REGION=eu-central-1
+SECRET_ID=my/app/secrets
+Secrets: Never commit real secrets. Use:
+
+Local: .env (ignored by Git)
 
 CI: pipeline secrets/credentials store
 
-AWS: SSM Parameter Store or AWS Secrets Manager
+AWS: SSM Parameter Store or Secrets Manager
 
 CI/CD
 CI (CI/)
-Typical pipeline stages:
+Typical stages:
 
-Lint (flake8/ruff/black)
+Install dependencies
 
-Unit tests (pytest)
+Lint/Format (e.g., ruff/flake8/black)
 
-Build Docker images (one per service)
+Test (pytest + coverage)
+
+Build Docker images
 
 Scan images (optional)
 
-Push images to registry (e.g., Amazon ECR)
+Push to registry (e.g., Amazon ECR)
 
-If you use Jenkins, look for Jenkinsfile/Groovy under CI/.
-For GitHub Actions or other tools, adapt these steps to the platform syntax.
+If using Jenkins, see CI/ for Jenkinsfile/Groovy; if using another platform, adapt the same stages.
 
 CD (CD/)
-Delivery pipeline usually:
+Common flow:
 
-Pull image tags from ECR/registry
+Pull image tag from the registry
 
-Update task definitions / manifests
+Update Task Definition/Manifest
 
-Deploy to target (e.g., ECS Fargate service or EKS)
+Deploy to ECS/EKS/EC2
 
-Health checks & rollout strategy (rolling or blue/green)
+Wait for health checks/rollout (rolling or blue/green)
+
+Image tagging strategy (recommended):
+
+app:gitsha for immutability
+
+app:env-latest for convenience (dev/stage/prod)
 
 Infrastructure
-Folder: Infrasstructure/ (IaC)
+All infra is under Infrasstructure/ (name intentionally kept).
 
-This typically includes:
+This typically covers:
 
 Networking: VPC, subnets, NAT/IGW, security groups
 
-Compute: ECS/EKS/EC2, task definitions, capacity providers
+Compute: ECS (Fargate) / EKS / EC2 + capacity
 
-Routing: Load balancer (ALB/NLB) + target groups + listeners
+Routing: ALB/NLB, target groups, listeners
 
-Registries: ECR repositories for images
+Registry: ECR repositories
 
-State: Remote backend for IaC state (e.g., S3 + DynamoDB for Terraform)
+State: Remote backend (e.g., S3 + DynamoDB for Terraform)
 
 Terraform (if applicable)
 bash
@@ -219,47 +235,65 @@ aws cloudformation deploy \
   --template-file template.yaml \
   --capabilities CAPABILITY_NAMED_IAM \
   --parameter-overrides Env=dev ImageTag=<tag>
-Pick the path that matches the actual files in Infrasstructure/.
+Pick the flow that matches the actual files in Infrasstructure/.
 
-Observability & Logs
-Application logs: stdout/stderr -> picked up by the container platform (e.g., CloudWatch Logs)
+Observability
+Logs: write to stdout/stderr; forward via ECS/EKS to CloudWatch Logs
 
-Metrics: add Prometheus endpoints or CloudWatch metrics as needed
+Metrics: expose Prometheus endpoints or use CloudWatch custom metrics
 
-Tracing: integrate OpenTelemetry (OTel) SDKs for distributed tracing
+Tracing: integrate OpenTelemetry SDKs for distributed traces
 
-Health checks: container HEALTHCHECK and target group health checks
+Health: container HEALTHCHECK + target group health checks
 
 Testing & Quality
-Unit tests: pytest -q
+Suggested tools/commands:
 
-Formatting: black .
+bash
+Copy code
+# Unit tests
+pytest -q
 
-Linting: flake8 . or ruff .
+# Formatting
+black .
 
-Type checking: mypy . (if type hints are in use)
+# Linting
+ruff .         # or: flake8 .
 
-Consider adding these as CI steps to block broken commits.
+# Type checking (if annotated)
+mypy .
+Add these to CI to block broken commits.
 
 Troubleshooting
-Ports / binding: Ensure the container/app port matches your Dockerfile EXPOSE and .env.
+Port mismatch: ensure app port == Dockerfile EXPOSE == container PORT env
 
-Credentials: For AWS deploys, verify the CI/CD role has ECR (pull/push) and ECS/EKS update permissions.
+Image not updating: push a new tag and update service to that tag
 
-Networking: If services can’t reach each other, check security groups, target groups, and service discovery.
+No outbound access: verify NAT gateway and route tables (private subnets)
 
-Image not updating: Confirm the pipeline pushes a new tag and the service is updated to that tag.
+Service-to-service: check SG rules, service discovery/DNS, and health checks
+
+IAM: verify task role has access to ECR, SSM/Secrets, CloudWatch, etc.
 
 Roadmap
- Add OpenAPI docs (FastAPI auto-docs at /docs or Swagger for Flask)
+ OpenAPI docs (e.g., FastAPI /docs or Swagger for Flask)
 
- Add integration tests
+ Integration tests & contract tests
 
- Add blue/green or canary deploys
+ Blue/green or canary releases
 
- Add observability stack (traces, metrics dashboards)
+ Dashboards for metrics/traces
 
- Expand infra to include a managed DB and cache layer
+ Managed DB/cache layer (RDS, ElastiCache)
+
+ Autoscaling policies (CPU/Memory/ALB-Requests)
 
 License
-Add a license file (e.g., MIT) at the repo root if you intend to open-source the code.
+If open-sourcing, add a LICENSE file (e.g., MIT).
+
+Maintainer
+Almog Maman — Issues and PRs are welcome.
+
+makefile
+Copy code
+::contentReference[oaicite:0]{index=0}
