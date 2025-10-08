@@ -225,6 +225,3 @@ Open a PR with a clear description
 
 🙋 Support
 Open an issue or contact the repo owner if you need help.
-
-pgsql
-Copy code
