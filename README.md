@@ -228,6 +228,3 @@ Open an issue or contact the repo owner if you need help.
 
 pgsql
 Copy code
-
-*Built from the visible repo structure and language breakdown on the GitHub listing.* :contentReference[oaicite:0]{index=0}
-::contentReference[oaicite:1]{index=1}
